@@ -23,7 +23,7 @@ export default function HeaderNav() {
           <Link href="/bookings" className="text-white/70 hover:text-white transition-colors whitespace-nowrap">
             My Bookings
           </Link>
-          {session.user?.role === 'ADMIN' && (
+          {(session.user as any)?.role === 'ADMIN' && (
             <Link href="/admin" className="text-white/70 hover:text-white transition-colors whitespace-nowrap">
               Admin
             </Link>
