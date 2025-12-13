@@ -81,18 +81,18 @@ export default function MyBookingsPage() {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-32 px-6">
+    <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto"
       >
-        <div className="mb-12">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-6xl font-clash font-bold mb-4">
+        <div className="mb-8 sm:mb-12">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-clash font-bold mb-3 sm:mb-4">
               <span className="text-white">My Bookings</span>
             </h1>
-            <p className="text-gray-400 text-lg">
+            <p className="text-gray-400 text-sm sm:text-base md:text-lg px-4">
               View all your confirmed movie tickets
             </p>
           </div>
@@ -127,7 +127,7 @@ export default function MyBookingsPage() {
           </motion.div>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid md:grid-cols-2 gap-4 sm:gap-6">
           {bookings.map((booking, index) => (
             <motion.div
               key={booking.id}
@@ -135,14 +135,14 @@ export default function MyBookingsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Link href={`/ticket/${booking.id}`}>
+              <Link href={`/ticket/${booking.id}`} className="touch-manipulation">
                 <motion.div
                   whileHover={{ scale: 1.02, y: -5 }}
-                  className="glass-strong rounded-2xl p-6 border border-white/10 hover:border-white/30 transition-all cursor-pointer h-full"
+                  className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-white/30 transition-all cursor-pointer h-full"
                 >
-                  <div className="flex gap-4 mb-4">
+                  <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-4">
                     {booking.posterUrl && (
-                      <div className="w-24 h-32 md:w-32 md:h-48 rounded-lg overflow-hidden relative flex-shrink-0">
+                      <div className="w-20 h-28 sm:w-24 sm:h-32 md:w-32 md:h-48 rounded-lg overflow-hidden relative flex-shrink-0">
                         <Image
                           src={poster(booking.posterUrl)}
                           alt={booking.movieTitle}
@@ -153,33 +153,33 @@ export default function MyBookingsPage() {
                         />
                       </div>
                     )}
-                    <div className="flex-1">
-                      <h3 className="text-xl md:text-2xl font-clash font-bold text-white mb-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg sm:text-xl md:text-2xl font-clash font-bold text-white mb-1 sm:mb-2 line-clamp-2">
                         {booking.movieTitle}
                       </h3>
-                      <p className="text-gray-400 text-sm mb-1">
+                      <p className="text-gray-400 text-xs sm:text-sm mb-1">
                         {booking.theaterName} • {booking.screenName}
                       </p>
-                      <p className="text-gray-400 text-sm mb-3">
+                      <p className="text-gray-400 text-xs sm:text-sm mb-2 sm:mb-3">
                         {formatDateTime(booking.startTime)}
                       </p>
-                      <div className="flex flex-wrap gap-2 mb-2">
+                      <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-2">
                         {booking.seats.map((seat) => (
                           <span
                             key={seat}
-                            className="px-2 py-1 bg-white/10 rounded text-xs text-white/80"
+                            className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-white/10 rounded text-[10px] sm:text-xs text-white/80"
                           >
                             {seat}
                           </span>
                         ))}
                       </div>
-                      <p className="text-lg font-clash font-bold text-white">
+                      <p className="text-base sm:text-lg font-clash font-bold text-white">
                         {formatCurrency(booking.totalAmount / 100)}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                    <span className="text-xs text-gray-400">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 pt-3 sm:pt-4 border-t border-white/10">
+                    <span className="text-[10px] sm:text-xs text-gray-400">
                       Booking ID: {booking.id.slice(0, 8)}
                     </span>
                     <div className="flex items-center gap-3">

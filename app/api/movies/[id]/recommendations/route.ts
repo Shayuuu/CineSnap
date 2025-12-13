@@ -4,14 +4,13 @@ const TMDB_BASE = 'https://api.themoviedb.org/3'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const apiKey = process.env.TMDB_API_KEY
-  if (!apiKey) {
-    return Response.json({ error: 'TMDB_API_KEY is missing' }, { status: 500 })
-  }
+  const { id } = await params
+  const { getTmdbApiKey } = await import('@/lib/config')
+  const apiKey = getTmdbApiKey()
 
-  const url = `${TMDB_BASE}/movie/${params.id}/recommendations?api_key=${apiKey}&language=en-IN&page=1`
+  const url = `${TMDB_BASE}/movie/${id}/recommendations?api_key=${apiKey}&language=en-IN&page=1`
 
   const res = await fetch(url, { next: { revalidate: 3600 } })
   if (!res.ok) {

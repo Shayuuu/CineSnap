@@ -191,7 +191,7 @@ export default function PaymentClient({
         src="https://checkout.razorpay.com/v1/checkout.js"
         strategy="lazyOnload"
       />
-      <div className="min-h-screen pt-24 pb-32 px-6">
+      <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6">
         <div className="max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -200,19 +200,19 @@ export default function PaymentClient({
           >
             {/* Header */}
             <div className="text-center">
-              <h1 className="text-4xl md:text-5xl font-clash font-bold text-white mb-2">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-clash font-bold text-white mb-2">
                 Complete Your Booking
               </h1>
-              <p className="text-gray-400">Review and proceed to payment</p>
+              <p className="text-gray-400 text-sm sm:text-base">Review and proceed to payment</p>
             </div>
 
             {/* Booking Summary */}
-            <div className="glass rounded-2xl p-8 space-y-6">
+            <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 space-y-4 sm:space-y-6">
               <div>
-                <h2 className="text-2xl font-clash font-bold text-white mb-4">
+                <h2 className="text-xl sm:text-2xl font-clash font-bold text-white mb-3 sm:mb-4">
                   {movieTitle}
                 </h2>
-                <div className="space-y-2 text-gray-300">
+                <div className="space-y-1.5 sm:space-y-2 text-sm sm:text-base text-gray-300">
                   <p>
                     <span className="text-white/70">Theater:</span> {theaterName}
                   </p>
@@ -226,8 +226,8 @@ export default function PaymentClient({
                 </div>
               </div>
 
-              <div className="border-t border-white/10 pt-6">
-                <h3 className="text-lg font-clash font-semibold text-white mb-4">
+              <div className="border-t border-white/10 pt-4 sm:pt-6">
+                <h3 className="text-base sm:text-lg font-clash font-semibold text-white mb-3 sm:mb-4">
                   Selected Seats
                 </h3>
                 <div className="flex flex-wrap gap-2">
@@ -238,7 +238,7 @@ export default function PaymentClient({
                     return (
                       <span
                         key={seatId}
-                        className="px-4 py-2 glass rounded-lg text-white font-semibold"
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 glass rounded-lg text-white font-semibold text-sm sm:text-base"
                       >
                         {row}{num}
                       </span>
@@ -247,18 +247,18 @@ export default function PaymentClient({
                 </div>
               </div>
 
-              <div className="border-t border-white/10 pt-6">
-                <div className="flex justify-between items-center mb-4">
+              <div className="border-t border-white/10 pt-4 sm:pt-6">
+                <div className="flex justify-between items-center mb-3 sm:mb-4 text-sm sm:text-base">
                   <span className="text-gray-300">Seats ({seatIds.length})</span>
                   <span className="text-white font-semibold">
                     ₹{pricePerSeat / 100} × {seatIds.length}
                   </span>
                 </div>
-                <div className="flex justify-between items-center pt-4 border-t border-white/10">
-                  <span className="text-xl font-clash font-bold text-white">
+                <div className="flex justify-between items-center pt-3 sm:pt-4 border-t border-white/10">
+                  <span className="text-lg sm:text-xl font-clash font-bold text-white">
                     Total Amount
                   </span>
-                  <span className="text-3xl font-clash font-bold text-white">
+                  <span className="text-2xl sm:text-3xl font-clash font-bold text-white">
                     ₹{total / 100}
                   </span>
                 </div>
@@ -266,32 +266,32 @@ export default function PaymentClient({
             </div>
 
             {/* Payment Method Selection */}
-            <div className="glass rounded-2xl p-6">
-              <h3 className="text-lg font-clash font-semibold text-white mb-4">
+            <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6">
+              <h3 className="text-base sm:text-lg font-clash font-semibold text-white mb-3 sm:mb-4">
                 Choose Payment Method
               </h3>
-              <div className="flex gap-4">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <button
                   onClick={() => setPaymentMethod('stripe')}
-                  className={`flex-1 px-6 py-4 rounded-xl border-2 transition-all ${
+                  className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 rounded-xl border-2 transition-all touch-manipulation min-h-[60px] ${
                     paymentMethod === 'stripe'
                       ? 'border-white bg-white/10'
                       : 'border-white/20 hover:border-white/40'
                   }`}
                 >
-                  <div className="text-white font-semibold mb-1">💳 Stripe</div>
-                  <div className="text-white/60 text-sm">Secure & Fast</div>
+                  <div className="text-white font-semibold mb-1 text-sm sm:text-base">💳 Stripe</div>
+                  <div className="text-white/60 text-xs sm:text-sm">Secure & Fast</div>
                 </button>
                 <button
                   onClick={() => setPaymentMethod('razorpay')}
-                  className={`flex-1 px-6 py-4 rounded-xl border-2 transition-all ${
+                  className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 rounded-xl border-2 transition-all touch-manipulation min-h-[60px] ${
                     paymentMethod === 'razorpay'
                       ? 'border-white bg-white/10'
                       : 'border-white/20 hover:border-white/40'
                   }`}
                 >
-                  <div className="text-white font-semibold mb-1">💳 Razorpay</div>
-                  <div className="text-white/60 text-sm">UPI & Cards</div>
+                  <div className="text-white font-semibold mb-1 text-sm sm:text-base">💳 Razorpay</div>
+                  <div className="text-white/60 text-xs sm:text-sm">UPI & Cards</div>
                 </button>
               </div>
             </div>
@@ -301,24 +301,24 @@ export default function PaymentClient({
               <motion.div
                 whileHover={{ rotateY: 8, rotateX: 2 }}
                 transition={{ type: 'spring', stiffness: 150, damping: 15 }}
-                className="w-full max-w-md h-64 rounded-3xl relative overflow-hidden"
+                className="w-full max-w-md h-56 sm:h-64 rounded-2xl sm:rounded-3xl relative overflow-hidden"
                 style={cardBg as any}
               >
-                <div className="absolute inset-0 p-6 flex flex-col justify-between">
-                  <div className="flex justify-between items-center text-white/80 text-sm">
+                <div className="absolute inset-0 p-4 sm:p-6 flex flex-col justify-between">
+                  <div className="flex justify-between items-center text-white/80 text-xs sm:text-sm">
                     <span>CineSnap • Premium</span>
                     <span>{seatIds.length} seat{seatIds.length > 1 ? 's' : ''}</span>
                   </div>
                   <div>
-                    <p className="text-white text-3xl font-clash mb-2">₹{(total / 100).toFixed(0)}</p>
-                    <p className="text-white/70 text-sm">
+                    <p className="text-white text-2xl sm:text-3xl font-clash mb-1 sm:mb-2">₹{(total / 100).toFixed(0)}</p>
+                    <p className="text-white/70 text-xs sm:text-sm line-clamp-1">
                       {movieTitle} • {formatDateTime(showtime)}
                     </p>
-                    <p className="text-white/60 text-sm mt-2">
+                    <p className="text-white/60 text-xs sm:text-sm mt-1 sm:mt-2 line-clamp-1">
                       Seats: {seatIds.map((s) => s.split('-').slice(-2).join('')).join(', ')}
                     </p>
                   </div>
-                  <div className="flex items-center justify-between text-white/60 text-xs">
+                  <div className="flex items-center justify-between text-white/60 text-[10px] sm:text-xs">
                     <span>Virtual Card</span>
                     <span>Secure • {paymentMethod === 'stripe' ? 'Stripe' : 'Razorpay'}</span>
                   </div>
@@ -331,7 +331,7 @@ export default function PaymentClient({
                   disabled={loading || seatIds.length === 0}
                   whileHover={{ scale: loading ? 1 : 1.02 }}
                   whileTap={{ scale: loading ? 1 : 0.98 }}
-                  className="px-12 py-4 bg-white text-black rounded-full font-clash font-semibold text-lg hover:bg-white/90 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-8 sm:px-12 py-3 sm:py-4 bg-white text-black rounded-full font-clash font-semibold text-base sm:text-lg hover:bg-white/90 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[48px]"
                 >
                   {loading ? 'Processing...' : `Pay ₹${total / 100}`}
                 </motion.button>

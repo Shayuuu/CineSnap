@@ -1,10 +1,8 @@
 import { NextRequest } from 'next/server'
+import { getTmdbApiKey } from '@/lib/config'
 
 export async function GET(req: NextRequest) {
-  const apiKey = process.env.TMDB_API_KEY
-  if (!apiKey) {
-    return Response.json({ error: 'TMDB_API_KEY is missing' }, { status: 500 })
-  }
+  const apiKey = getTmdbApiKey()
 
   const searchParams = req.nextUrl.searchParams
   const query = searchParams.get('q') || ''

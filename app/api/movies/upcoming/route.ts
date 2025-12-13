@@ -1,12 +1,10 @@
 import { NextRequest } from 'next/server'
+import { getTmdbApiKey } from '@/lib/config'
 
 const TMDB_BASE = 'https://api.themoviedb.org/3'
 
 export async function GET(req: NextRequest) {
-  const apiKey = process.env.TMDB_API_KEY
-  if (!apiKey) {
-    return Response.json({ error: 'TMDB_API_KEY is missing' }, { status: 500 })
-  }
+  const apiKey = getTmdbApiKey()
 
   const url = `${TMDB_BASE}/movie/upcoming?api_key=${apiKey}&language=en-IN&region=IN&page=1`
 

@@ -1,9 +1,10 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { queryOne, query } from '@/lib/db'
+import { getNextAuthSecret } from '@/lib/config'
 
 export const authOptions: NextAuthOptions = {
-  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET || 'dev-secret-key-change-in-production',
+  secret: getNextAuthSecret(),
   pages: {
     signIn: '/login',
     error: '/login',
@@ -61,8 +62,12 @@ export const authOptions: NextAuthOptions = {
 
           console.log(`[NextAuth] User found: ${dbUser.email} (ID: ${dbUser.id}, Role: ${dbUser.role || 'USER'})`)
           
-          // For development: accept any non-empty password (no password column needed)
+          // For showcase mode or development: accept password if it matches mock user password
           // In production, you would verify: await bcrypt.compare(credentials.password, dbUser.passwordHash)
+          if (dbUser.password && dbUser.password !== credentials.password && dbUser.passwordHash !== credentials.password) {
+            console.error('[NextAuth] Password mismatch')
+            return null
+          }
           
           const user = {
             id: dbUser.id,
@@ -72,6 +77,7 @@ export const authOptions: NextAuthOptions = {
           }
           
           console.log('[NextAuth] Authentication successful, returning user:', { id: user.id, email: user.email })
+          // The JWT callback will store user.id in the token
           return user as any
         } catch (error: any) {
           console.error('[NextAuth] Authorize error:', error?.message || error)
@@ -83,24 +89,86 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session }) {
+    async session({ session, token }) {
       try {
+        // First, check if user ID is already in token (from authorize)
+        if (token?.sub || token?.userId) {
+          session.user.id = (token.sub || token.userId) as string
+          // @ts-ignore
+          session.user.role = token.role as string
+          console.log('[NextAuth] Session callback: Using user ID from token:', session.user.id)
+          return session
+        }
+
+        // If not in token, look up by email
         if (session.user?.email) {
-          const dbUser = await queryOne<any>(
-            'SELECT id, role FROM User WHERE email = ?',
-            [session.user.email]
+          const email = session.user.email.trim().toLowerCase()
+          
+          // Try case-insensitive lookup first
+          let dbUser = await queryOne<any>(
+            'SELECT id, role FROM User WHERE LOWER(email) = ?',
+            [email]
           )
+          
+          // If not found, try exact match
+          if (!dbUser) {
+            dbUser = await queryOne<any>(
+              'SELECT id, role FROM User WHERE email = ?',
+              [session.user.email.trim()]
+            )
+          }
+          
+          // If still not found and in development, create the user
+          if (!dbUser && process.env.NODE_ENV === 'development') {
+            console.log('[NextAuth] User not found, creating user in development mode:', email)
+            const { randomBytes } = await import('crypto')
+            const userId = randomBytes(16).toString('hex')
+            const { execute } = await import('@/lib/db')
+            
+            try {
+              await execute(
+                'INSERT INTO User (id, email, name, role) VALUES (?, ?, ?, ?)',
+                [userId, email, session.user.name || email.split('@')[0], 'USER']
+              )
+              dbUser = { id: userId, role: 'USER' }
+              console.log('[NextAuth] Created user:', userId)
+            } catch (createError: any) {
+              // User might have been created by another request
+              if (createError?.code !== 'ER_DUP_ENTRY') { // MySQL duplicate key error
+                console.error('[NextAuth] Failed to create user:', createError)
+              }
+              // Try to fetch again
+              dbUser = await queryOne<any>(
+                'SELECT id, role FROM User WHERE LOWER(email) = ?',
+                [email]
+              )
+            }
+          }
+          
           if (dbUser) {
             session.user.id = dbUser.id
             // @ts-ignore
             session.user.role = dbUser.role
+            console.log('[NextAuth] Session callback: Set user ID', dbUser.id)
+          } else {
+            console.warn('[NextAuth] Session callback: User not found in database for email:', email)
           }
         }
         return session
       } catch (error: any) {
         console.error('[NextAuth] Session callback error:', error?.message || error)
+        console.error('[NextAuth] Session callback error stack:', error?.stack)
+        // Return session even if database query fails - user might still be authenticated
         return session
       }
+    },
+    async jwt({ token, user }) {
+      // Store user ID in token when user first logs in
+      if (user) {
+        token.userId = user.id
+        token.role = (user as any).role
+      }
+      return token
     },
   },
   debug: process.env.NODE_ENV === 'development',

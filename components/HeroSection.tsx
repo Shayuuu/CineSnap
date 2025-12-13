@@ -172,17 +172,17 @@ export default function HeroSection() {
         />
       )}
 
-      <div className="relative z-10 max-w-7xl mx-auto px-6 py-20 text-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20 text-center">
         {/* Animated Tagline */}
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl xl:text-9xl font-clash font-bold mb-6 px-4"
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-clash font-bold mb-4 sm:mb-6 px-2 sm:px-4 leading-tight sm:leading-normal"
         >
-          <span className="text-white">{typedText}</span>
+          <span className="text-white break-words">{typedText}</span>
           {typedText.length < tagline.length && (
-            <span className="inline-block w-1 h-16 md:h-24 bg-white animate-pulse ml-2">|</span>
+            <span className="inline-block w-0.5 sm:w-1 h-12 sm:h-16 md:h-20 lg:h-24 bg-white animate-pulse ml-1 sm:ml-2">|</span>
           )}
         </motion.h1>
 
@@ -192,13 +192,13 @@ export default function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.6 }}
-            className="glass-strong rounded-2xl p-6 md:p-8 mb-12 max-w-3xl mx-auto border border-white/20"
+            className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 mb-8 sm:mb-12 max-w-3xl mx-auto border border-white/20"
           >
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.7, duration: 0.8 }}
-              className="text-2xl md:text-3xl lg:text-4xl font-clash font-semibold text-white mb-3 text-center italic"
+              className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-clash font-semibold text-white mb-2 sm:mb-3 text-center italic px-2 break-words"
             >
               &ldquo;{currentDialogue.quote}&rdquo;
             </motion.p>
@@ -206,7 +206,7 @@ export default function HeroSection() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.8 }}
-              className="text-sm md:text-base text-gray-400 text-center"
+              className="text-xs sm:text-sm md:text-base text-gray-400 text-center"
             >
               — {currentDialogue.movie}
             </motion.p>
@@ -219,35 +219,35 @@ export default function HeroSection() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1, duration: 0.8 }}
-            className="relative overflow-hidden"
+            className="relative overflow-hidden -mx-4 sm:mx-0 px-4 sm:px-0"
           >
-            <div className="flex gap-4 md:gap-6 animate-marquee whitespace-nowrap">
+            <div className="flex gap-3 sm:gap-4 md:gap-6 animate-marquee whitespace-nowrap">
               {[...trendingMovies, ...trendingMovies].map((movie, i) => (
                 <Link
                   key={`${movie.id}-${i}`}
                   href={`/movies/${movie.id}`}
-                  className="glass rounded-xl p-3 md:p-4 min-w-[140px] md:min-w-[180px] hover:border-white/30 transition-all duration-300 group"
+                  className="glass rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 min-w-[120px] sm:min-w-[140px] md:min-w-[180px] hover:border-white/30 transition-all duration-300 group touch-manipulation"
                 >
-                  <div className="w-full h-48 md:h-64 bg-white/5 rounded-lg mb-2 md:mb-3 flex items-center justify-center border border-white/10 overflow-hidden relative">
+                  <div className="w-full h-40 sm:h-48 md:h-64 bg-white/5 rounded-lg mb-1.5 sm:mb-2 md:mb-3 flex items-center justify-center border border-white/10 overflow-hidden relative">
                     {movie.posterUrl ? (
                       <Image
                         src={movie.posterUrl}
                         alt={movie.title}
                         fill
                         className="object-cover group-hover:scale-110 transition-transform duration-300"
-                        sizes="(max-width: 768px) 140px, 180px"
+                        sizes="(max-width: 640px) 120px, (max-width: 768px) 140px, 180px"
                         unoptimized
                       />
                     ) : (
-                      <span className="text-sm md:text-base font-clash text-center px-2 text-white/70">{movie.title}</span>
+                      <span className="text-xs sm:text-sm md:text-base font-clash text-center px-2 text-white/70 line-clamp-2">{movie.title}</span>
                     )}
                     {movie.rating && (
-                      <div className="absolute top-2 right-2 bg-black/70 px-2 py-1 rounded-full text-xs font-semibold text-white">
+                      <div className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 bg-black/70 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-full text-[10px] sm:text-xs font-semibold text-white">
                         ⭐ {movie.rating.toFixed(1)}
                       </div>
                     )}
                   </div>
-                  <p className="text-xs md:text-sm font-medium truncate text-white/80 group-hover:text-white transition-colors">{movie.title}</p>
+                  <p className="text-[10px] sm:text-xs md:text-sm font-medium truncate text-white/80 group-hover:text-white transition-colors px-0.5">{movie.title}</p>
                 </Link>
               ))}
             </div>
@@ -259,13 +259,13 @@ export default function HeroSection() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 1.2, duration: 0.6 }}
-          className="mt-12 flex flex-wrap gap-4 justify-center"
+          className="mt-8 sm:mt-12 flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-stretch sm:items-center px-4 sm:px-0"
         >
           <motion.a
             href="/movies"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="inline-block px-6 md:px-8 py-3 md:py-4 bg-white text-black rounded-full font-clash font-semibold text-base md:text-lg hover:bg-white/90 transition-all"
+            className="inline-block w-full sm:w-auto px-6 sm:px-6 md:px-8 py-3 sm:py-3 md:py-4 bg-white text-black rounded-full font-clash font-semibold text-sm sm:text-base md:text-lg hover:bg-white/90 transition-all touch-manipulation min-h-[48px] flex items-center justify-center"
           >
             Explore Movies →
           </motion.a>
@@ -273,7 +273,7 @@ export default function HeroSection() {
             href="/mood-recommend"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="inline-block px-6 md:px-8 py-3 md:py-4 glass rounded-full border border-white/20 hover:border-white/40 transition-all text-white font-clash font-semibold text-base md:text-lg"
+            className="inline-block w-full sm:w-auto px-6 sm:px-6 md:px-8 py-3 sm:py-3 md:py-4 glass rounded-full border border-white/20 hover:border-white/40 transition-all text-white font-clash font-semibold text-sm sm:text-base md:text-lg touch-manipulation min-h-[48px] flex items-center justify-center"
           >
             🎭 Mood Match
           </motion.a>

@@ -17,35 +17,26 @@ Before deploying, make sure you have:
 
 ---
 
-## 🗄️ Step 1: Set Up MySQL Database
+## 🗄️ Step 1: Set Up Supabase Database
 
-Vercel doesn't provide MySQL hosting, so you need an external database.
+Vercel doesn't provide database hosting, so we'll use Supabase (PostgreSQL).
 
-### Option A: PlanetScale (Recommended - Free Tier)
+### Supabase Setup (Recommended)
 
-1. **Sign up**: Go to https://planetscale.com
-2. **Create Database**:
-   - Click "Create database"
+1. **Sign up**: Go to https://supabase.com
+2. **Create Project**:
+   - Click "New Project"
    - Name: `cinesnap`
+   - Database Password: Create a strong password (save it!)
    - Region: Choose closest to you
-   - Plan: Free (Hobby)
+   - Plan: Free tier is fine
 3. **Get Connection String**:
-   - Go to your database → "Connect"
-   - Copy the connection string (looks like: `mysql://user:pass@host/database`)
+   - Go to Settings → Database
+   - Copy the "URI" connection string
+   - Format: `postgresql://postgres:[PASSWORD]@db.xxxxx.supabase.co:5432/postgres`
    - **Save this** - you'll need it for Vercel
 
-### Option B: Railway (Includes MySQL)
-
-1. **Sign up**: Go to https://railway.app
-2. **Create Project** → "New" → "Database" → "MySQL"
-3. **Get Connection String**:
-   - Click on MySQL service → "Connect"
-   - Copy the connection string
-
-### Option C: AWS RDS / DigitalOcean
-
-- Follow their MySQL setup guides
-- Get connection string from their dashboard
+**📖 Complete Supabase setup guide**: See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
 
 ---
 
@@ -119,8 +110,8 @@ Click **"Environment Variables"** and add:
 #### Required Variables:
 
 ```env
-# Database (use connection string from Step 1)
-DATABASE_URL=mysql://user:password@host:port/database
+# Database (use Supabase connection string from Step 1)
+DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxxxx.supabase.co:5432/postgres?sslmode=require
 
 # NextAuth
 NEXTAUTH_URL=https://your-project.vercel.app
@@ -179,33 +170,31 @@ openssl rand -base64 32
 
 ### 4.1 Run Migrations
 
-Connect to your MySQL database and run these SQL files **in order**:
+Connect to your Supabase database and run these SQL files **in order**:
+
+1. **Go to Supabase Dashboard** → **SQL Editor**
+2. **Run these files in order**:
 
 ```sql
 -- 1. Main database structure
--- Run: database-setup.sql
+-- Run: database-setup-postgres.sql
 
 -- 2. Reviews table
--- Run: database-reviews.sql
+-- Run: database-reviews-postgres.sql
 
 -- 3. Group booking tables
--- Run: database-group-booking.sql
--- Run: database-group-booking-update.sql
+-- Run: database-group-booking-postgres.sql
 
 -- 4. Wishlist, Loyalty, Food tables
--- Run: database-wishlist-loyalty-food.sql
-
--- 5. Cancellation & Refunds tables
--- Run: database-cancellation-refunds.sql
-
--- 6. Stripe migration (if using Stripe)
--- Run: database-stripe-migration.sql
+-- Run: database-wishlist-loyalty-food-postgres.sql
 ```
 
 **How to run**:
-- **PlanetScale**: Use their web console or CLI
-- **Railway**: Use MySQL Workbench or CLI
-- **AWS RDS**: Use MySQL Workbench or CLI
+- Copy SQL file contents
+- Paste into Supabase SQL Editor
+- Click "Run"
+
+**📖 Complete guide**: See [SUPABASE_SETUP.md](./SUPABASE_SETUP.md)
 
 ### 4.2 Insert Sample Data (Optional)
 

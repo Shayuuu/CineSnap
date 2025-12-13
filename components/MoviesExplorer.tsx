@@ -48,7 +48,7 @@ export default function MoviesExplorer({ nowPlaying, upcoming, popular }: Props)
   }, [allMovies, language])
 
   return (
-    <div className="min-h-screen pt-24 pb-32 px-6 relative">
+    <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6 relative">
       {/* Decorative Movie Elements */}
       <div className="absolute top-32 right-10 text-6xl opacity-5 pointer-events-none z-0">
         🎬
@@ -63,14 +63,14 @@ export default function MoviesExplorer({ nowPlaying, upcoming, popular }: Props)
       <div className="max-w-7xl mx-auto space-y-8 relative z-10">
         {/* Tabs + Filter */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 sm:mx-0 px-4 sm:px-0 scrollbar-hide">
             {tabs.map((tab) => {
               const active = activeTab === tab.id
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as 'now' | 'soon')}
-                  className={`px-4 py-2 rounded-full border ${
+                  onClick={() => setActiveTab(tab.id as 'now' | 'soon' | 'pop')}
+                  className={`px-3 sm:px-4 py-2 rounded-full border text-sm sm:text-base whitespace-nowrap touch-manipulation ${
                     active ? 'bg-white text-black border-white' : 'border-white/20 text-white/80'
                   }`}
                 >

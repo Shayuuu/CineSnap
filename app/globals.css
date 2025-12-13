@@ -5,6 +5,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Mobile-friendly improvements */
+@layer utilities {
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 :root {
   --bg-primary: #0a0a0a;
   --accent: #ffffff;
@@ -304,4 +321,21 @@ h1, h2, h3, h4, h5, h6 {
 
 .footer-bottom {
   position: relative;
+}
+
+/* Mobile-friendly improvements */
+@layer utilities {
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }

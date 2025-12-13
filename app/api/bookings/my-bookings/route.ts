@@ -16,15 +16,51 @@ export async function GET(req: NextRequest) {
     
     // If userId not in session, try to get it from email (fallback)
     if (!userId && session.user?.email) {
-      const dbUser = await queryOne<any>('SELECT id FROM User WHERE email = ?', [session.user.email])
+      const email = session.user.email.trim().toLowerCase()
+      console.log('[My Bookings API] User ID not in session, looking up by email:', email)
+      
+      // Try case-insensitive lookup first
+      const dbUser = await queryOne<any>(
+        'SELECT id FROM User WHERE LOWER(email) = ?',
+        [email]
+      )
+      
       if (dbUser) {
         userId = dbUser.id
+        console.log('[My Bookings API] Found user by email:', userId)
+      } else {
+        // Try exact match as fallback
+        const dbUserExact = await queryOne<any>(
+          'SELECT id FROM User WHERE email = ?',
+          [session.user.email.trim()]
+        )
+        if (dbUserExact) {
+          userId = dbUserExact.id
+          console.log('[My Bookings API] Found user by exact email match:', userId)
+        }
       }
     }
     
     if (!userId) {
-      console.error('[My Bookings API] User ID not found. Session user:', session.user)
-      return Response.json({ error: 'User ID not found' }, { status: 401 })
+      console.error('[My Bookings API] User ID not found.')
+      console.error('[My Bookings API] Session user:', {
+        email: session.user?.email,
+        name: session.user?.name,
+        id: (session.user as any)?.id,
+      })
+      
+      // Debug: List some users to help troubleshoot
+      try {
+        const sampleUsers = await query<any>('SELECT id, email FROM User LIMIT 5')
+        console.log('[My Bookings API] Sample users in database:', sampleUsers)
+      } catch (err) {
+        console.error('[My Bookings API] Could not fetch sample users:', err)
+      }
+      
+      return Response.json({ 
+        error: 'User ID not found',
+        details: 'Please try logging out and logging back in'
+      }, { status: 401 })
     }
     
     // Fetch all confirmed bookings for the user
@@ -55,11 +91,11 @@ export async function GET(req: NextRequest) {
     const bookingsWithSeats = await Promise.all(
       bookings.map(async (booking: any) => {
         const seats = await query<any>(
-          `SELECT s.row, s.number, s.type
+          `SELECT s.\`row\`, s.\`number\`, s.type
            FROM Seat s
            INNER JOIN _BookingSeats bs ON s.id = bs.B
            WHERE bs.A = ?
-           ORDER BY s.row, s.number`,
+           ORDER BY s.\`row\`, s.\`number\``,
           [booking.id]
         )
         return {

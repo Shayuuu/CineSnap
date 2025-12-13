@@ -152,19 +152,19 @@ export default function ReviewSection({ movieId }: Props) {
     : 0
 
   return (
-    <div className="mt-12">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-3xl font-clash font-bold text-white mb-2">
+    <div className="mt-8 sm:mt-12">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 sm:gap-0 mb-4 sm:mb-6">
+        <div className="flex-1">
+          <h2 className="text-2xl sm:text-3xl font-clash font-bold text-white mb-2">
             Reviews
           </h2>
           {reviews.length > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-0.5 sm:gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                   <span
                     key={star}
-                    className={`text-xl ${
+                    className={`text-lg sm:text-xl ${
                       star <= Math.round(averageRating)
                         ? 'text-yellow-400'
                         : 'text-gray-600'
@@ -174,7 +174,7 @@ export default function ReviewSection({ movieId }: Props) {
                   </span>
                 ))}
               </div>
-              <span className="text-gray-400 text-sm ml-2">
+              <span className="text-gray-400 text-xs sm:text-sm">
                 {averageRating.toFixed(1)} ({reviews.length} {reviews.length === 1 ? 'review' : 'reviews'})
               </span>
             </div>
@@ -191,7 +191,7 @@ export default function ReviewSection({ movieId }: Props) {
             }}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 bg-white text-black rounded-full font-clash font-semibold text-sm hover:bg-white/90 transition-colors"
+            className="px-3 sm:px-4 py-2 bg-white text-black rounded-full font-clash font-semibold text-xs sm:text-sm hover:bg-white/90 transition-colors touch-manipulation min-h-[36px] sm:min-h-[40px] whitespace-nowrap"
           >
             Write Review
           </motion.button>
@@ -257,7 +257,7 @@ export default function ReviewSection({ movieId }: Props) {
                   disabled={submitting || rating === 0}
                   whileHover={{ scale: submitting ? 1 : 1.02 }}
                   whileTap={{ scale: submitting ? 1 : 0.98 }}
-                  className="px-6 py-2 bg-white text-black rounded-full font-clash font-semibold text-sm hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-4 sm:px-6 py-2 bg-white text-black rounded-full font-clash font-semibold text-xs sm:text-sm hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[40px]"
                 >
                   {submitting ? 'Saving...' : userReview ? 'Update Review' : 'Submit Review'}
                 </motion.button>

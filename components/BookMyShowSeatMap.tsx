@@ -263,7 +263,7 @@ export default function BookMyShowSeatMap({
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto space-y-8 px-4">
+    <div className="w-full max-w-6xl mx-auto space-y-6 sm:space-y-8 px-3 sm:px-4">
       {/* Enhanced Screen Bar */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
@@ -274,10 +274,10 @@ export default function BookMyShowSeatMap({
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent animate-shimmer"></div>
         
         <div className="relative text-center">
-          <div className="text-4xl md:text-5xl font-bold text-white tracking-[0.4em] mb-4 drop-shadow-lg">
+          <div className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-[0.2em] sm:tracking-[0.3em] md:tracking-[0.4em] mb-3 sm:mb-4 drop-shadow-lg">
             SCREEN
           </div>
-          <div className="h-1.5 w-48 mx-auto bg-gradient-to-r from-transparent via-white/60 to-transparent rounded-full shadow-lg shadow-white/20"></div>
+          <div className="h-1 sm:h-1.5 w-32 sm:w-40 md:w-48 mx-auto bg-gradient-to-r from-transparent via-white/60 to-transparent rounded-full shadow-lg shadow-white/20"></div>
           
           {/* Decorative elements */}
           <div className="absolute top-2 left-4 text-2xl opacity-20">🎬</div>
@@ -340,7 +340,7 @@ export default function BookMyShowSeatMap({
                       </div>
                       
                       {/* Seats with Aisle Markers */}
-                      <div className="flex gap-2 flex-wrap justify-center items-center">
+                      <div className="flex gap-1.5 sm:gap-2 flex-wrap justify-center items-center">
                         {sortedSeats.map((seat, seatIndex) => {
                           const isBooked = bookedSeats.includes(seat.id)
                           const isLocked = currentLockedSeats.includes(seat.id) && !selected.includes(seat.id) && !isBooked
@@ -378,7 +378,7 @@ export default function BookMyShowSeatMap({
                                   ${!isBooked && !isLocked ? 'cursor-pointer' : 'cursor-not-allowed'}
                                   disabled:opacity-50
                                   ${isSelected ? 'shadow-2xl shadow-green-500/60 ring-2 ring-green-400 ring-offset-2 ring-offset-gray-900' : ''}
-                                  ${isVip ? 'w-14 h-12 md:w-16 md:h-14' : isPremium ? 'w-11 h-10 md:w-13 md:h-11' : 'w-10 h-9 md:w-12 md:h-10'}
+                                  ${isVip ? 'w-12 h-10 sm:w-14 sm:h-12 md:w-16 md:h-14' : isPremium ? 'w-10 h-9 sm:w-11 sm:h-10 md:w-13 md:h-11' : 'w-9 h-8 sm:w-10 sm:h-9 md:w-12 md:h-10'}
                                   transform-gpu
                                 `}
                                 title={`${seat.row}${seat.number} - ${isBooked ? 'Sold' : isLocked ? 'Locked' : isSelected ? 'Selected' : 'Available'} - ₹${getSeatPrice(seat.type, pricePerSeat)}`}
@@ -560,24 +560,24 @@ export default function BookMyShowSeatMap({
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}
-          className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 glass-strong rounded-2xl px-8 py-5 border-2 border-white/30 shadow-2xl backdrop-blur-xl"
+          className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 z-50 glass-strong rounded-xl sm:rounded-2xl px-4 sm:px-6 md:px-8 py-4 sm:py-5 border-2 border-white/30 shadow-2xl backdrop-blur-xl w-[calc(100%-2rem)] sm:w-auto max-w-[calc(100vw-2rem)]"
         >
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
-                <span className="text-xl">🎫</span>
+          <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 md:gap-8">
+            <div className="flex items-center gap-3 sm:gap-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg">
+                <span className="text-lg sm:text-xl">🎫</span>
               </div>
               <div>
                 <div className="text-xs text-white/60 uppercase tracking-wide">Selected Seats</div>
-                <div className="text-xl font-bold text-white">
+                <div className="text-lg sm:text-xl font-bold text-white">
                   {selected.length} Ticket{selected.length > 1 ? 's' : ''}
                 </div>
               </div>
             </div>
-            <div className="h-14 w-px bg-gradient-to-b from-transparent via-white/30 to-transparent"></div>
-            <div>
+            <div className="hidden sm:block h-14 w-px bg-gradient-to-b from-transparent via-white/30 to-transparent"></div>
+            <div className="text-center sm:text-left">
               <div className="text-xs text-white/60 uppercase tracking-wide">Total Amount</div>
-              <div className="text-2xl font-bold text-white">
+              <div className="text-xl sm:text-2xl font-bold text-white">
                 ₹{totalPrice}
               </div>
             </div>

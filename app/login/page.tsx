@@ -120,23 +120,23 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-32 px-6 flex items-center justify-center">
+    <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6 flex items-center justify-center">
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         className="w-full max-w-md"
       >
-        <div className="glass-strong rounded-2xl p-8 border border-white/10">
-          <div className="text-center mb-8">
-            <Link href="/" className="inline-block mb-4">
-              <h1 className="text-3xl font-clash font-bold text-white">
+        <div className="glass-strong rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 border border-white/10">
+          <div className="text-center mb-6 sm:mb-8">
+            <Link href="/" className="inline-block mb-3 sm:mb-4">
+              <h1 className="text-2xl sm:text-3xl font-clash font-bold text-white">
                 CineSnap
               </h1>
             </Link>
-            <h2 className="text-2xl font-clash font-semibold mb-2">
+            <h2 className="text-xl sm:text-2xl font-clash font-semibold mb-2">
               {isSignup ? 'Create Account' : 'Welcome Back'}
             </h2>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-xs sm:text-sm px-2">
               {isSignup 
                 ? 'Sign up to start booking your favorite movies'
                 : 'Sign in to book tickets and manage your bookings'
@@ -207,7 +207,7 @@ export default function LoginPage() {
                     placeholder="John Doe"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white"
+                    className="w-full px-4 py-3 sm:py-3.5 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white text-base touch-manipulation"
                     required
                     disabled={loading}
                   />
@@ -221,7 +221,7 @@ export default function LoginPage() {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white"
+                    className="w-full px-4 py-3 sm:py-3.5 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white text-base touch-manipulation"
                     required
                     disabled={loading}
                   />
@@ -235,7 +235,7 @@ export default function LoginPage() {
                     placeholder="At least 6 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white"
+                    className="w-full px-4 py-3 sm:py-3.5 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white text-base touch-manipulation"
                     required
                     minLength={6}
                     disabled={loading}
@@ -250,7 +250,7 @@ export default function LoginPage() {
                     placeholder="Re-enter your password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white"
+                    className="w-full px-4 py-3 sm:py-3.5 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white text-base touch-manipulation"
                     required
                     disabled={loading}
                   />
@@ -261,7 +261,7 @@ export default function LoginPage() {
                   disabled={loading}
                   whileHover={{ scale: loading ? 1 : 1.02 }}
                   whileTap={{ scale: loading ? 1 : 0.98 }}
-                  className="w-full bg-white text-black rounded-lg py-3 font-clash font-semibold text-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white text-black rounded-lg py-3 sm:py-3.5 font-clash font-semibold text-base sm:text-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
                 >
                   {loading ? 'Creating Account...' : 'Create Account'}
                 </motion.button>
@@ -284,7 +284,7 @@ export default function LoginPage() {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white"
+                    className="w-full px-4 py-3 sm:py-3.5 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white text-base touch-manipulation"
                     required
                     disabled={loading}
                   />
@@ -298,7 +298,7 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white"
+                    className="w-full px-4 py-3 sm:py-3.5 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white text-base touch-manipulation"
                     required
                     disabled={loading}
                   />
@@ -309,7 +309,7 @@ export default function LoginPage() {
                   disabled={loading}
                   whileHover={{ scale: loading ? 1 : 1.02 }}
                   whileTap={{ scale: loading ? 1 : 0.98 }}
-                  className="w-full bg-white text-black rounded-lg py-3 font-clash font-semibold text-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-white text-black rounded-lg py-3 sm:py-3.5 font-clash font-semibold text-base sm:text-lg hover:bg-white/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[44px]"
                 >
                   {loading ? 'Signing in...' : 'Sign In'}
                 </motion.button>

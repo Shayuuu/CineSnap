@@ -1,4 +1,6 @@
-export const API_KEY = process.env.TMDB_API_KEY || 'MISSING_TMDB_API_KEY'
+import { getTmdbApiKey } from './config'
+
+export const API_KEY = getTmdbApiKey()
 export const IMG_BASE = 'https://image.tmdb.org/t/p/w500'
 
 export async function getJSON(url: string) {

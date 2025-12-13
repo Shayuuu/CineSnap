@@ -94,19 +94,19 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
   }
 
   return (
-    <div className="min-h-screen pt-24 pb-32 px-6">
+    <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto"
       >
         {/* Movie Header */}
-        <div className="flex flex-col md:flex-row gap-8 mb-12">
+        <div className="flex flex-col md:flex-row gap-6 sm:gap-8 mb-8 sm:mb-12">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="w-full md:w-80 h-[480px] glass rounded-2xl overflow-hidden relative group"
+            className="w-full md:w-80 h-[400px] sm:h-[480px] glass rounded-xl sm:rounded-2xl overflow-hidden relative group mx-auto md:mx-0"
           >
             {movie.posterUrl ? (
               <Image
@@ -132,28 +132,28 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
             transition={{ delay: 0.3 }}
             className="flex-1 space-y-4"
           >
-            <div className="flex items-start justify-between gap-4">
-              <h1 className="text-4xl md:text-6xl font-clash font-bold flex-1">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl font-clash font-bold flex-1">
                 <span className="text-white">{movie.title}</span>
               </h1>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                 {trailerUrl && (
                   <motion.button
                     onClick={() => setTrailerOpen(true)}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="flex items-center gap-2 px-4 py-2 glass rounded-lg hover:bg-white/10 transition-colors"
+                    className="flex items-center gap-2 px-3 sm:px-4 py-2 glass rounded-lg hover:bg-white/10 transition-colors touch-manipulation min-h-[44px]"
                   >
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8 5v14l11-7z" />
                     </svg>
-                    <span className="text-sm font-semibold text-white">Trailer</span>
+                    <span className="text-xs sm:text-sm font-semibold text-white">Trailer</span>
                   </motion.button>
                 )}
                 <WishlistButton movieId={movie.id} />
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 md:gap-4 text-xs sm:text-sm">
               {movie.genres && movie.genres.length > 0 && (
                 <span className="px-3 py-1 glass rounded-full text-white/70">
                   {movie.genres.join(', ')}
@@ -172,16 +172,16 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
                 </span>
               )}
             </div>
-            <p className="text-gray-300 leading-relaxed max-w-2xl">
+            <p className="text-gray-300 leading-relaxed max-w-2xl text-sm sm:text-base">
               {movie.overview || 'Experience the ultimate cinematic journey with premium seating and state-of-the-art sound.'}
             </p>
 
             {movie.cast && movie.cast.length > 0 && (
-              <div className="pt-4">
-                <h3 className="text-lg font-clash font-semibold text-white mb-2">Top Cast</h3>
-                <div className="flex flex-wrap gap-3">
-                  {movie.cast.map((c, index) => (
-                    <span key={`${c.id}-${index}`} className="px-3 py-2 glass rounded-lg text-sm text-white/80">
+              <div className="pt-3 sm:pt-4">
+                <h3 className="text-base sm:text-lg font-clash font-semibold text-white mb-2">Top Cast</h3>
+                <div className="flex flex-wrap gap-2 sm:gap-3">
+                  {movie.cast.slice(0, 6).map((c, index) => (
+                    <span key={`${c.id}-${index}`} className="px-2 sm:px-3 py-1.5 sm:py-2 glass rounded-lg text-xs sm:text-sm text-white/80">
                       {c.name} <span className="text-white/50">as</span> {c.character}
                     </span>
                   ))}
@@ -190,11 +190,11 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
             )}
 
             {movie.crew && movie.crew.length > 0 && (
-              <div className="pt-3">
-                <h3 className="text-lg font-clash font-semibold text-white mb-2">Crew</h3>
-                <div className="flex flex-wrap gap-3">
-                  {movie.crew.map((c, index) => (
-                    <span key={`${c.id}-${c.job}-${index}`} className="px-3 py-2 glass rounded-lg text-sm text-white/80">
+              <div className="pt-2 sm:pt-3">
+                <h3 className="text-base sm:text-lg font-clash font-semibold text-white mb-2">Crew</h3>
+                <div className="flex flex-wrap gap-2 sm:gap-3">
+                  {movie.crew.slice(0, 6).map((c, index) => (
+                    <span key={`${c.id}-${c.job}-${index}`} className="px-2 sm:px-3 py-1.5 sm:py-2 glass rounded-lg text-xs sm:text-sm text-white/80">
                       {c.name} <span className="text-white/50">({c.job})</span>
                     </span>
                   ))}
@@ -245,11 +245,11 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
         {/* Showtimes Section - Grouped by Theater */}
         {showtimes.length > 0 ? (
           <div>
-            <h2 className="text-3xl font-clash font-bold mb-6">
+            <h2 className="text-2xl sm:text-3xl font-clash font-bold mb-4 sm:mb-6">
               <span className="text-white">Available Showtimes</span>
             </h2>
           
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {Object.entries(showtimesByTheater).map(([theaterKey, theaterData], theaterIndex) => {
                 const showtimesByDate = groupByDate(theaterData.showtimes)
                 
@@ -259,23 +259,23 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: theaterIndex * 0.1 }}
-                    className="glass-strong rounded-2xl p-6 border border-white/10"
+                    className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10"
                   >
                     {/* Theater Header */}
-                    <div className="mb-4 pb-4 border-b border-white/10">
-                      <h3 className="text-xl font-clash font-bold text-white mb-1">
+                    <div className="mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-white/10">
+                      <h3 className="text-lg sm:text-xl font-clash font-bold text-white mb-1">
                         {theaterData.theaterName}
                       </h3>
                       {theaterData.theaterLocation && (
-                        <p className="text-sm text-gray-400">{theaterData.theaterLocation}</p>
+                        <p className="text-xs sm:text-sm text-gray-400">{theaterData.theaterLocation}</p>
                       )}
                     </div>
 
                     {/* Showtimes grouped by date */}
-                    <div className="space-y-6">
+                    <div className="space-y-4 sm:space-y-6">
                       {Object.entries(showtimesByDate).map(([dateKey, dateShows]) => (
                         <div key={dateKey}>
-                          <h4 className="text-sm font-clash font-semibold text-white/70 mb-3">
+                          <h4 className="text-xs sm:text-sm font-clash font-semibold text-white/70 mb-2 sm:mb-3">
                             {formatDate(dateShows[0].startTime)}
                           </h4>
                           
@@ -289,21 +289,21 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
                               return acc
                             }, {} as Record<string, typeof dateShows>)
                           ).map(([screenName, screenShows]) => (
-                            <div key={screenName} className="mb-4 last:mb-0">
-                              <p className="text-xs text-gray-500 mb-2">{screenName}</p>
+                            <div key={screenName} className="mb-3 sm:mb-4 last:mb-0">
+                              <p className="text-[10px] sm:text-xs text-gray-500 mb-2">{screenName}</p>
                               <div className="flex flex-wrap gap-2">
                                 {screenShows.map((show) => (
-                                  <Link key={show.id} href={`/booking/${show.id}`}>
+                                  <Link key={show.id} href={`/booking/${show.id}`} className="touch-manipulation">
                                     <motion.button
                                       whileHover={{ scale: 1.05 }}
                                       whileTap={{ scale: 0.95 }}
-                                      className="px-4 py-2 glass rounded-lg border border-white/10 hover:border-white/30 transition-all group"
+                                      className="px-3 sm:px-4 py-2 sm:py-2.5 glass rounded-lg border border-white/10 hover:border-white/30 transition-all group min-w-[70px] sm:min-w-[80px]"
                                     >
                                       <div className="text-center">
-                                        <p className="text-sm font-clash font-semibold text-white group-hover:text-white/90">
+                                        <p className="text-xs sm:text-sm font-clash font-semibold text-white group-hover:text-white/90">
                                           {formatTime(show.startTime)}
                                         </p>
-                                        <p className="text-xs text-gray-400 mt-1">
+                                        <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">
                                           ₹{show.price / 100}
                                         </p>
                                       </div>

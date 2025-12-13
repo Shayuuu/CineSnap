@@ -45,9 +45,9 @@ export default function BookingClient({
 
   if (status === 'loading' || !mounted) {
     return (
-      <div className="min-h-screen pt-24 pb-32 px-6 flex items-center justify-center">
-        <div className="glass rounded-2xl p-8">
-          <div className="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6 flex items-center justify-center">
+        <div className="glass rounded-xl sm:rounded-2xl p-6 sm:p-8">
+          <div className="w-10 h-10 sm:w-12 sm:h-12 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-400">Loading...</p>
         </div>
       </div>
@@ -61,7 +61,7 @@ export default function BookingClient({
   const userId = (session.user as any)?.id || 'demo-user'
 
   return (
-    <div className="min-h-screen pt-24 pb-32 px-4 md:px-6">
+    <div className="min-h-screen pt-20 sm:pt-24 pb-24 sm:pb-32 px-3 sm:px-4 md:px-6">
       <div className="max-w-6xl mx-auto">
         <BookingHeader
           movieTitle={movieTitle}
@@ -71,10 +71,10 @@ export default function BookingClient({
           selectedCount={selectedSeats.length}
         />
 
-        <div className="mb-6 flex gap-4 justify-center">
+        <div className="mb-4 sm:mb-6 flex gap-3 sm:gap-4 justify-center">
           <Link
             href={`/booking/${showtimeId}/group`}
-            className="px-6 py-3 glass rounded-xl border border-white/10 hover:border-white/30 transition-all text-white font-clash font-semibold"
+            className="px-4 sm:px-6 py-2.5 sm:py-3 glass rounded-lg sm:rounded-xl border border-white/10 hover:border-white/30 transition-all text-white font-clash font-semibold text-sm sm:text-base touch-manipulation"
           >
             👥 Group Booking
           </Link>

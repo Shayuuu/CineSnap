@@ -11,12 +11,8 @@ const nextConfig = {
       },
     ],
   },
-  // Fix workspace root warning for Turbopack
-  experimental: {
-    turbo: {
-      root: path.resolve(__dirname),
-    },
-  },
+  // Turbopack configuration (if needed)
+  // Note: turbo.root is deprecated in Next.js 16
 }
 
 module.exports = nextConfig

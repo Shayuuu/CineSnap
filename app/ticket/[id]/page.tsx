@@ -36,7 +36,7 @@ export default async function TicketPage({ params }: Props) {
   // Get booked seats
   const bookingSeats = await query<any>(
     `SELECT s.* FROM Seat s
-     INNER JOIN \`_BookingSeats\` bs ON s.id = bs.B
+     INNER JOIN _BookingSeats bs ON s.id = bs.B
      WHERE bs.A = ?`,
     [id]
   )

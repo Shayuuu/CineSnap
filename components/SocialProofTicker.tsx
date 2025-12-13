@@ -78,35 +78,49 @@ export default function SocialProofTicker() {
     if (bookings.length === 0) return
 
     const interval = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % bookings.length)
+      setCurrentIndex((prev) => {
+        if (bookings.length === 0) return 0
+        return (prev + 1) % bookings.length
+      })
     }, 8000) // Change every 8 seconds
 
     return () => clearInterval(interval)
-  }, [bookings.length])
+  }, [bookings.length, bookings])
 
   if (bookings.length === 0) return null
 
-  const booking = bookings[currentIndex]
+  // Ensure currentIndex is within bounds
+  const safeIndex = Math.max(0, Math.min(currentIndex, bookings.length - 1))
+  const booking = bookings[safeIndex]
+  
+  // Safety check - ensure booking exists
+  if (!booking) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-white/10 hidden md:block">
-      <div className="max-w-7xl mx-auto px-6 py-3">
+    <div className="fixed bottom-0 left-0 right-0 z-50 glass-strong border-t border-white/10">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 py-2 sm:py-3">
         <AnimatePresence mode="wait">
           <motion.div
-            key={currentIndex}
+            key={safeIndex}
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.5 }}
-            className="flex items-center justify-center gap-2 text-sm"
+            className="flex items-center justify-center gap-1.5 sm:gap-2 text-xs sm:text-sm"
           >
-            <span className="text-white/60">✨</span>
-            <span className="text-gray-300">
-              Someone in <span className="font-semibold text-white">{booking.location}</span> just booked{' '}
-              <span className="font-semibold text-white">{booking.seats} seat{booking.seats !== 1 ? 's' : ''}</span> for{' '}
-              <span className="font-semibold text-white">{booking.movie}</span> •{' '}
-              <span className="text-gray-400">{booking.time}</span> •{' '}
-              <span className="text-gray-500">{booking.ago}</span>
+            <span className="text-white/60 text-sm sm:text-base">✨</span>
+            <span className="text-gray-300 text-center">
+              <span className="hidden sm:inline">Someone in </span>
+              <span className="font-semibold text-white">{booking.location || 'Mumbai'}</span>
+              <span className="hidden sm:inline"> just booked </span>
+              <span className="sm:hidden"> • </span>
+              <span className="font-semibold text-white">{booking.seats || 1} seat{(booking.seats || 1) !== 1 ? 's' : ''}</span>
+              <span className="hidden sm:inline"> for </span>
+              <span className="font-semibold text-white">{booking.movie || 'a movie'}</span>
+              <span className="hidden md:inline"> • </span>
+              <span className="hidden md:inline text-gray-400">{booking.time || 'now'}</span>
+              <span className="hidden lg:inline"> • </span>
+              <span className="hidden lg:inline text-gray-500">{booking.ago || 'just now'}</span>
             </span>
           </motion.div>
         </AnimatePresence>

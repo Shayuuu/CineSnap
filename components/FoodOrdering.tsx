@@ -80,21 +80,21 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
   }, {} as Record<string, FoodItem[]>)
 
   return (
-    <div className="glass rounded-2xl p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h3 className="text-2xl font-clash font-bold text-white">Food & Beverages</h3>
+    <div className="glass rounded-xl sm:rounded-2xl p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+        <h3 className="text-xl sm:text-2xl font-clash font-bold text-white">Food & Beverages</h3>
         {getCartCount() > 0 && (
-          <div className="px-4 py-2 glass-strong rounded-full">
-            <span className="text-white font-semibold">{getCartCount()} items</span>
+          <div className="px-3 sm:px-4 py-1.5 sm:py-2 glass-strong rounded-full">
+            <span className="text-white font-semibold text-sm sm:text-base">{getCartCount()} items</span>
           </div>
         )}
       </div>
 
       {/* Category Filter */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 -mx-2 sm:mx-0 px-2 sm:px-0 scrollbar-hide">
         <button
           onClick={() => setSelectedCategory(null)}
-          className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+          className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors touch-manipulation whitespace-nowrap ${
             selectedCategory === null
               ? 'bg-white text-black'
               : 'bg-white/10 text-white hover:bg-white/20'
@@ -106,7 +106,7 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
           <button
             key={cat}
             onClick={() => setSelectedCategory(cat)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+            className={`px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-colors touch-manipulation whitespace-nowrap ${
               selectedCategory === cat
                 ? 'bg-white text-black'
                 : 'bg-white/10 text-white hover:bg-white/20'
@@ -146,14 +146,14 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
                   <>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                      className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white touch-manipulation text-lg sm:text-base"
                     >
                       -
                     </button>
-                    <span className="text-white font-semibold w-8 text-center">{cart[item.id]}</span>
+                    <span className="text-white font-semibold w-8 text-center text-sm sm:text-base">{cart[item.id]}</span>
                     <button
                       onClick={() => addToCart(item.id)}
-                      className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white"
+                      className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white touch-manipulation text-lg sm:text-base"
                     >
                       +
                     </button>
@@ -161,7 +161,7 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
                 ) : (
                   <button
                     onClick={() => addToCart(item.id)}
-                    className="px-4 py-2 bg-white text-black rounded-lg font-semibold text-sm hover:bg-white/90 transition-colors"
+                    className="px-3 sm:px-4 py-2 bg-white text-black rounded-lg font-semibold text-xs sm:text-sm hover:bg-white/90 transition-colors touch-manipulation min-h-[36px] sm:min-h-[40px]"
                   >
                     Add
                   </button>
@@ -185,7 +185,7 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
           </div>
           <button
             onClick={() => onOrderComplete?.(getCartTotal())}
-            className="w-full py-3 bg-white text-black rounded-lg font-clash font-bold text-lg hover:bg-white/90 transition-colors"
+            className="w-full py-3 bg-white text-black rounded-lg font-clash font-bold text-base sm:text-lg hover:bg-white/90 transition-colors touch-manipulation min-h-[48px]"
           >
             Add to Booking
           </button>

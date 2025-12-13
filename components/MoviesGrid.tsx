@@ -23,22 +23,22 @@ type Props = {
 
 export default function MoviesGrid({ movies }: Props) {
   return (
-    <div className="min-h-screen pt-24 pb-32 px-6">
+    <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="max-w-7xl mx-auto"
       >
-        <div className="mb-12 text-center">
-          <h1 className="text-5xl md:text-7xl font-clash font-bold mb-4">
+        <div className="mb-8 sm:mb-12 text-center">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-clash font-bold mb-3 sm:mb-4">
             <span className="text-white">Now Showing</span>
           </h1>
-          <p className="text-gray-400 text-lg">
+          <p className="text-gray-400 text-sm sm:text-base md:text-lg px-4">
             Pick a movie to view showtimes and book seats
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
           {movies.map((movie, index) => (
             <motion.div
               key={movie.id}
