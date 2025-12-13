@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      Role     @default(USER)
+  bookings  Booking[]
+}
+
+model Movie {
+  id          String    @id @default(cuid())
+  title       String
+  posterUrl   String
+  duration    Int       // minutes
+  genre       String
+  releaseDate DateTime
+  showtimes   Showtime[]
+}
+
+model Theater {
+  id        String    @id @default(cuid())
+  name      String
+  location  String
+  screens   Screen[]
+}
+
+model Screen {
+  id        String    @id @default(cuid())
+  name      String    // e.g., "Screen 1"
+  theater   Theater   @relation(fields: [theaterId], references: [id])
+  theaterId String
+  seats     Seat[]
+  showtimes Showtime[]
+}
+
+model Seat {
+  id        String   @id @default(cuid())
+  row       String
+  number    Int
+  type      SeatType @default(STANDARD)
+  screen    Screen   @relation(fields: [screenId], references: [id])
+  screenId  String
+}
+
+model Showtime {
+  id         String    @id @default(cuid())
+  movie      Movie     @relation(fields: [movieId], references: [id])
+  movieId    String
+  screen     Screen    @relation(fields: [screenId], references: [id])
+  screenId   String
+  startTime  DateTime
+  price      Int       // in paise/rupees
+  bookings   Booking[]
+  lockedSeats SeatLock[]
+}
+
+model Booking {
+  id              String         @id @default(cuid())
+  user            User           @relation(fields: [userId], references: [id])
+  userId          String
+  showtime        Showtime       @relation(fields: [showtimeId], references: [id])
+  showtimeId      String
+  seats           Seat[]         @relation("BookingSeats")
+  totalAmount     Int
+  status          BookingStatus  @default(PENDING)
+  razorpayOrderId String?
+  razorpayPaymentId String?
+  createdAt       DateTime       @default(now())
+}
+
+model SeatLock {
+  id          String    @id @default(cuid())
+  showtime    Showtime  @relation(fields: [showtimeId], references: [id])
+  showtimeId  String
+  seat        Seat      @relation(fields: [seatId], references: [id])
+  seatId      String
+  expiresAt   DateTime
+}
+
+enum Role { USER ADMIN }
+
+enum SeatType { STANDARD PREMIUM VIP }
+
+enum BookingStatus { PENDING CONFIRMED CANCELLED }
+
