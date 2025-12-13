@@ -3,6 +3,7 @@ import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { randomBytes } from 'crypto'
+import { sendEmail, getCancellationEmail } from '@/lib/email'
 
 export async function POST(
   req: NextRequest,
