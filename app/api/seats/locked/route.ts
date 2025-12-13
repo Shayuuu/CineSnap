@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   const now = Date.now()
 
   try {
-    const locked = await redis.hgetall<number>(key)
+    const locked = await redis.hgetall(key) as Record<string, string | number> | null
     const activeLocks: string[] = []
     if (locked) {
       for (const [seatId, expiry] of Object.entries(locked)) {

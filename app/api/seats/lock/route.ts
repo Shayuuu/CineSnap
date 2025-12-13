@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   const expiry = now + 10 * 1000 // 10 seconds hold
 
   try {
-    const existing = await redis.hgetall<number>(key)
+    const existing = await redis.hgetall(key) as Record<string, string | number> | null
     for (const seatId of seatIds) {
       if (existing?.[seatId] && Number(existing[seatId]) > now) {
         return Response.json({ error: 'Seat already locked' }, { status: 409 })
