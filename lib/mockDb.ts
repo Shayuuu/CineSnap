@@ -184,22 +184,72 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
     if (lowerSql.includes('starttime') && lowerSql.includes('>=') && lowerSql.includes('now()')) {
       const now = new Date()
       showtimes = showtimes.filter(st => {
-        const startTime = new Date(st.startTime)
-        return startTime >= now
+        try {
+          const startTime = new Date(st.startTime)
+          return !isNaN(startTime.getTime()) && startTime >= now
+        } catch {
+          return false
+        }
       })
     }
 
     const results = showtimes.map(st => {
-      const theaterData = getTheaterByScreenId(st.screenId)
+      // Ensure screenId is a string for comparison
+      const screenIdStr = String(st.screenId)
+      const theaterData = getTheaterByScreenId(screenIdStr)
+      
+      if (!theaterData) {
+        // Try to find screen by matching any screen ID pattern
+        let foundTheater = null
+        let foundScreen = null
+        
+        for (const theater of MOCK_THEATERS) {
+          foundScreen = theater.screens.find(s => String(s.id) === screenIdStr)
+          if (foundScreen) {
+            foundTheater = theater
+            break
+          }
+        }
+        
+        // If still not found, use first theater as fallback
+        if (!foundTheater || !foundScreen) {
+          const firstTheater = MOCK_THEATERS[0]
+          const firstScreen = firstTheater?.screens[0]
+          return {
+            id: st.id,
+            startTime: st.startTime,
+            price: st.price,
+            screenId: st.screenId,
+            screenName: firstScreen?.name || 'Screen 1',
+            theaterId: firstTheater?.id,
+            theaterName: firstTheater?.name || 'PVR Cinemas',
+            theaterLocation: firstTheater?.location || 'Mumbai',
+            movieId: st.movieId,
+          }
+        }
+        
+        return {
+          id: st.id,
+          startTime: st.startTime,
+          price: st.price,
+          screenId: st.screenId,
+          screenName: foundScreen.name || 'Screen 1',
+          theaterId: foundTheater.id,
+          theaterName: foundTheater.name || 'PVR Cinemas',
+          theaterLocation: foundTheater.location || 'Mumbai',
+          movieId: st.movieId,
+        }
+      }
+      
       return {
         id: st.id,
         startTime: st.startTime,
         price: st.price,
         screenId: st.screenId,
-        screenName: theaterData?.screen.name || 'Screen 1',
-        theaterId: theaterData?.theater.id,
-        theaterName: theaterData?.theater.name || 'Theater',
-        theaterLocation: theaterData?.theater.location || 'Mumbai',
+        screenName: theaterData.screen.name || 'Screen 1',
+        theaterId: theaterData.theater.id,
+        theaterName: theaterData.theater.name || 'PVR Cinemas',
+        theaterLocation: theaterData.theater.location || 'Mumbai',
         movieId: st.movieId,
       }
     })
@@ -207,12 +257,16 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
     // Sort by theater name and start time if ORDER BY is present
     if (lowerSql.includes('order by')) {
       results.sort((a: any, b: any) => {
-        if (lowerSql.includes('t.name')) {
+        if (lowerSql.includes('t.name') || lowerSql.includes('theatername')) {
           const nameCompare = (a.theaterName || '').localeCompare(b.theaterName || '')
           if (nameCompare !== 0) return nameCompare
         }
-        if (lowerSql.includes('s.starttime')) {
-          return new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+        if (lowerSql.includes('s.starttime') || lowerSql.includes('starttime')) {
+          try {
+            return new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          } catch {
+            return 0
+          }
         }
         return 0
       })
@@ -342,16 +396,27 @@ function mockExecute(sql: string, params?: any[]): any {
 
     // Check if showtime already exists (for ON DUPLICATE KEY UPDATE)
     if (lowerSql.includes('on duplicate key update')) {
-      const existing = MOCK_SHOWTIMES.find(st => st.id === showtimeId)
+      const existing = MOCK_SHOWTIMES.find(st => st.id === showtimeId || (st.movieId === String(movieId) && st.screenId === String(screenId) && st.startTime === String(startTime)))
       if (existing) {
-        return { insertId: showtimeId, affectedRows: 0 }
+        return { insertId: existing.id, affectedRows: 0 }
       }
+    }
+
+    // Ensure screenId exists in MOCK_THEATERS, if not use first available screen
+    let validScreenId = String(screenId)
+    const screenExists = MOCK_THEATERS.some(theater => 
+      theater.screens.some(screen => String(screen.id) === validScreenId)
+    )
+    
+    if (!screenExists && MOCK_THEATERS.length > 0) {
+      // Use first available screen from first theater
+      validScreenId = MOCK_THEATERS[0].screens[0]?.id || 'screen-1'
     }
 
     MOCK_SHOWTIMES.push({
       id: showtimeId,
       movieId: String(movieId),
-      screenId: String(screenId),
+      screenId: validScreenId,
       startTime: String(startTime),
       price: Number(price),
     })
