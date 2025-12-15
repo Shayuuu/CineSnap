@@ -207,6 +207,7 @@ export function getTheaterByScreenId(screenId: string | number | undefined | nul
         screen: {
           id: screen.id,
           name: screen.name,
+          seats: screen.seats,
         }
       }
     }
