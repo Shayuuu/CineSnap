@@ -21,7 +21,8 @@ async function generateShowtimes(movieId: string) {
 
     for (const screen of screens) {
       for (const slot of slots) {
-        const startTime = `${dateStr} ${slot}:00`
+        // Create proper ISO datetime string for better parsing
+        const startTime = `${dateStr}T${slot}:00:00.000Z`
         const showId = randomBytes(12).toString('hex')
         const price = 45000 + Math.floor(Math.random() * 15000) // ₹450-₹600
         await execute(

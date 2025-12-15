@@ -183,10 +183,36 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
     // Filter by startTime >= NOW() if present in query
     if (lowerSql.includes('starttime') && lowerSql.includes('>=') && lowerSql.includes('now()')) {
       const now = new Date()
+      // Set to start of today to be more lenient (show all showtimes for today and future)
+      now.setHours(0, 0, 0, 0)
+      
       showtimes = showtimes.filter(st => {
         try {
-          const startTime = new Date(st.startTime)
-          return !isNaN(startTime.getTime()) && startTime >= now
+          if (!st.startTime) return false
+          
+          // Handle different date formats
+          let startTime: Date
+          if (typeof st.startTime === 'string') {
+            // Try parsing as ISO string first
+            startTime = new Date(st.startTime)
+            // If that fails, try parsing as "YYYY-MM-DD HH:MM:SS"
+            if (isNaN(startTime.getTime()) && st.startTime.includes(' ')) {
+              const [datePart, timePart] = st.startTime.split(' ')
+              const [year, month, day] = datePart.split('-')
+              const [hour, minute] = timePart.split(':')
+              startTime = new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute || '0'))
+            }
+          } else {
+            startTime = new Date(st.startTime)
+          }
+          
+          if (isNaN(startTime.getTime())) return false
+          
+          // Set to start of day for comparison
+          startTime.setHours(0, 0, 0, 0)
+          
+          // Allow showtimes from today onwards
+          return startTime >= now
         } catch {
           return false
         }
