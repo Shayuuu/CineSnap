@@ -363,11 +363,11 @@ export default function MovieDetailClient({ movie, showtimes = [], recommendatio
               return (
                 <div className="glass rounded-2xl p-12 text-center">
                   <p className="text-gray-400 text-lg mb-2">This movie is no longer playing in theaters</p>
-                  <p className="text-gray-500 text-sm">Released on {new Date(movie.releaseDate).toLocaleDateString('en-IN', { 
+                  <p className="text-gray-500 text-sm">Released on {movie.releaseDate ? new Date(movie.releaseDate).toLocaleDateString('en-IN', { 
                     year: 'numeric', 
                     month: 'long', 
                     day: 'numeric' 
-                  })}</p>
+                  }) : 'N/A'}</p>
                 </div>
               )
             }

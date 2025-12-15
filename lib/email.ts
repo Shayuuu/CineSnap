@@ -80,14 +80,14 @@ export function getBookingConfirmationEmail(data: {
               <div class="ticket-info">
                 <h2>${data.movieTitle}</h2>
                 <p><strong>Theater:</strong> ${data.theaterName} - ${data.screenName}</p>
-                <p><strong>Showtime:</strong> ${new Date(data.showtime).toLocaleString('en-IN', { 
+                <p><strong>Showtime:</strong> ${data.showtime ? new Date(data.showtime).toLocaleString('en-IN', { 
                   weekday: 'long', 
                   year: 'numeric', 
                   month: 'long', 
                   day: 'numeric',
                   hour: '2-digit',
                   minute: '2-digit'
-                })}</p>
+                }) : 'N/A'}</p>
                 <p><strong>Seats:</strong> ${data.seats.join(', ')}</p>
                 <p><strong>Total Amount:</strong> ₹${(data.totalAmount / 100).toFixed(2)}</p>
                 <p><strong>Booking ID:</strong> ${data.bookingId.slice(0, 8)}</p>
@@ -200,10 +200,10 @@ export function getReminderEmail(data: {
               <div class="reminder-info">
                 <h2>${data.movieTitle}</h2>
                 <p><strong>Theater:</strong> ${data.theaterName} - ${data.screenName}</p>
-                <p><strong>Showtime:</strong> ${new Date(data.showtime).toLocaleString('en-IN', { 
+                <p><strong>Showtime:</strong> ${data.showtime ? new Date(data.showtime).toLocaleString('en-IN', { 
                   hour: '2-digit',
                   minute: '2-digit'
-                })}</p>
+                }) : 'N/A'}</p>
                 <p><strong>Seats:</strong> ${data.seats.join(', ')}</p>
               </div>
 

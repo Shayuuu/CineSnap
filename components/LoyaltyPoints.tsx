@@ -37,6 +37,14 @@ export default function LoyaltyPoints() {
   }
 
   if (!session || loading || !loyalty) return null
+  
+  // Ensure all required properties exist with defaults
+  const safeLoyalty = {
+    points: loyalty.points ?? 0,
+    totalEarned: loyalty.totalEarned ?? 0,
+    totalRedeemed: loyalty.totalRedeemed ?? 0,
+    tier: loyalty.tier ?? 'BRONZE' as const,
+  }
 
   const tierColors = {
     BRONZE: 'from-amber-600 to-amber-800',
@@ -59,9 +67,9 @@ export default function LoyaltyPoints() {
     PLATINUM: Infinity,
   }
 
-  const progress = loyalty.tier === 'PLATINUM'
+  const progress = safeLoyalty.tier === 'PLATINUM'
     ? 100
-    : ((loyalty.totalEarned / nextTierPoints[loyalty.tier]) * 100)
+    : ((safeLoyalty.totalEarned / nextTierPoints[safeLoyalty.tier]) * 100)
 
   return (
     <motion.div
@@ -71,8 +79,8 @@ export default function LoyaltyPoints() {
     >
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-xl font-clash font-bold text-white">Loyalty Points</h3>
-        <div className={`px-4 py-2 rounded-full bg-gradient-to-r ${tierColors[loyalty.tier]} text-white font-bold text-sm`}>
-          {tierNames[loyalty.tier]}
+        <div className={`px-4 py-2 rounded-full bg-gradient-to-r ${tierColors[safeLoyalty.tier]} text-white font-bold text-sm`}>
+          {tierNames[safeLoyalty.tier]}
         </div>
       </div>
 
@@ -80,18 +88,18 @@ export default function LoyaltyPoints() {
         <div>
           <div className="flex items-center justify-between mb-2">
             <span className="text-gray-400 text-sm">Available Points</span>
-            <span className="text-2xl font-clash font-bold text-white">{loyalty.points.toLocaleString()}</span>
+            <span className="text-2xl font-clash font-bold text-white">{safeLoyalty.points.toLocaleString()}</span>
           </div>
           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${progress}%` }}
-              className={`h-full bg-gradient-to-r ${tierColors[loyalty.tier]}`}
+              className={`h-full bg-gradient-to-r ${tierColors[safeLoyalty.tier]}`}
             />
           </div>
-          {loyalty.tier !== 'PLATINUM' && (
+          {safeLoyalty.tier !== 'PLATINUM' && (
             <p className="text-xs text-gray-400 mt-2">
-              {nextTierPoints[loyalty.tier] - loyalty.totalEarned} points to {tierNames[nextTierPoints[loyalty.tier] === 2000 ? 'SILVER' : nextTierPoints[loyalty.tier] === 5000 ? 'GOLD' : 'PLATINUM']}
+              {nextTierPoints[safeLoyalty.tier] - safeLoyalty.totalEarned} points to {tierNames[nextTierPoints[safeLoyalty.tier] === 2000 ? 'SILVER' : nextTierPoints[safeLoyalty.tier] === 5000 ? 'GOLD' : 'PLATINUM']}
             </p>
           )}
         </div>
@@ -99,11 +107,11 @@ export default function LoyaltyPoints() {
         <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
           <div>
             <p className="text-xs text-gray-400 mb-1">Total Earned</p>
-            <p className="text-lg font-semibold text-white">{loyalty.totalEarned.toLocaleString()}</p>
+            <p className="text-lg font-semibold text-white">{safeLoyalty.totalEarned.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-xs text-gray-400 mb-1">Total Redeemed</p>
-            <p className="text-lg font-semibold text-white">{loyalty.totalRedeemed.toLocaleString()}</p>
+            <p className="text-lg font-semibold text-white">{safeLoyalty.totalRedeemed.toLocaleString()}</p>
           </div>
         </div>
       </div>

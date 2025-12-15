@@ -1,6 +1,8 @@
 // Consistent date formatting to avoid hydration mismatches
-export function formatDate(date: string | Date): string {
+export function formatDate(date: string | Date | null | undefined): string {
+  if (!date) return 'N/A'
   const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return 'N/A'
   return d.toLocaleDateString('en-US', {
     year: 'numeric',
     month: '2-digit',
@@ -8,8 +10,10 @@ export function formatDate(date: string | Date): string {
   })
 }
 
-export function formatDateTime(date: string | Date): string {
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return 'N/A'
   const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return 'N/A'
   return d.toLocaleString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -19,8 +23,10 @@ export function formatDateTime(date: string | Date): string {
   })
 }
 
-export function formatDateShort(date: string | Date): string {
+export function formatDateShort(date: string | Date | null | undefined): string {
+  if (!date) return 'N/A'
   const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return 'N/A'
   return d.toDateString()
 }
 
