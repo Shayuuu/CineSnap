@@ -61,8 +61,8 @@ export default function MovieDetailClient({ movie, showtimes = [], recommendatio
     const theaterKey = show.theaterId || show.theaterName || 'unknown'
     if (!acc[theaterKey]) {
       acc[theaterKey] = {
-        theaterName: show.theaterName || 'Unknown Theater',
-        theaterLocation: show.theaterLocation,
+        theaterName: show.theaterName || 'PVR Cinemas',
+        theaterLocation: show.theaterLocation || 'Mumbai',
         showtimes: []
       }
     }

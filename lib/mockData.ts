@@ -190,10 +190,26 @@ export const MOCK_USERS = [
 export const MOCK_BOOKING_SEATS: Record<string, string[]> = {}
 
 // Helper to get theater by screen ID
-export function getTheaterByScreenId(screenId: string) {
+export function getTheaterByScreenId(screenId: string | number | undefined | null) {
+  if (!screenId) return null
+  
+  const screenIdStr = String(screenId)
+  
   for (const theater of MOCK_THEATERS) {
-    const screen = theater.screens.find(s => s.id === screenId)
-    if (screen) return { theater, screen }
+    const screen = theater.screens.find(s => String(s.id) === screenIdStr)
+    if (screen) {
+      return { 
+        theater: {
+          id: theater.id,
+          name: theater.name,
+          location: theater.location,
+        },
+        screen: {
+          id: screen.id,
+          name: screen.name,
+        }
+      }
+    }
   }
   return null
 }

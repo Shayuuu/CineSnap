@@ -177,7 +177,7 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
   if (lowerSql.includes('select') && lowerSql.includes('showtime') && (lowerSql.includes('join') || lowerSql.includes('screen') || lowerSql.includes('theater'))) {
     const movieId = params?.[0]
     let showtimes = movieId 
-      ? MOCK_SHOWTIMES.filter(st => st.movieId === String(movieId))
+      ? MOCK_SHOWTIMES.filter(st => String(st.movieId) === String(movieId))
       : MOCK_SHOWTIMES
     
     // Filter by startTime >= NOW() if present in query
@@ -198,58 +198,33 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
       const screenIdStr = String(st.screenId)
       const theaterData = getTheaterByScreenId(screenIdStr)
       
-      if (!theaterData) {
-        // Try to find screen by matching any screen ID pattern
-        let foundTheater = null
-        let foundScreen = null
-        
-        for (const theater of MOCK_THEATERS) {
-          foundScreen = theater.screens.find(s => String(s.id) === screenIdStr)
-          if (foundScreen) {
-            foundTheater = theater
-            break
-          }
-        }
-        
-        // If still not found, use first theater as fallback
-        if (!foundTheater || !foundScreen) {
-          const firstTheater = MOCK_THEATERS[0]
-          const firstScreen = firstTheater?.screens[0]
-          return {
-            id: st.id,
-            startTime: st.startTime,
-            price: st.price,
-            screenId: st.screenId,
-            screenName: firstScreen?.name || 'Screen 1',
-            theaterId: firstTheater?.id,
-            theaterName: firstTheater?.name || 'PVR Cinemas',
-            theaterLocation: firstTheater?.location || 'Mumbai',
-            movieId: st.movieId,
-          }
-        }
-        
+      if (theaterData) {
         return {
           id: st.id,
           startTime: st.startTime,
           price: st.price,
           screenId: st.screenId,
-          screenName: foundScreen.name || 'Screen 1',
-          theaterId: foundTheater.id,
-          theaterName: foundTheater.name || 'PVR Cinemas',
-          theaterLocation: foundTheater.location || 'Mumbai',
+          screenName: theaterData.screen.name || 'Screen 1',
+          theaterId: theaterData.theater.id,
+          theaterName: theaterData.theater.name || 'PVR Cinemas',
+          theaterLocation: theaterData.theater.location || 'Mumbai',
           movieId: st.movieId,
         }
       }
+      
+      // Fallback: use first theater if screen not found
+      const firstTheater = MOCK_THEATERS[0]
+      const firstScreen = firstTheater?.screens[0]
       
       return {
         id: st.id,
         startTime: st.startTime,
         price: st.price,
         screenId: st.screenId,
-        screenName: theaterData.screen.name || 'Screen 1',
-        theaterId: theaterData.theater.id,
-        theaterName: theaterData.theater.name || 'PVR Cinemas',
-        theaterLocation: theaterData.theater.location || 'Mumbai',
+        screenName: firstScreen?.name || 'Screen 1',
+        theaterId: firstTheater?.id || 'theater-1',
+        theaterName: firstTheater?.name || 'PVR Cinemas',
+        theaterLocation: firstTheater?.location || 'Mumbai',
         movieId: st.movieId,
       }
     })
