@@ -12,7 +12,7 @@ import Footer from '@/components/Footer'
 export const metadata: Metadata = {
   title: 'CineSnap - Premium Movie Booking Experience',
   description: 'Book your movie tickets with real-time seat locking. Premium cinema-grade experience.',
-  manifest: '/manifest.json',
+  manifest: '/manifest',
   themeColor: '#0a0a0a',
 }
 
@@ -20,7 +20,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <head>
-        <link rel="icon" href="/favicon.ico" />
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
       </head>
       <body className="min-h-screen relative">

@@ -11,8 +11,14 @@ const nextConfig = {
       },
     ],
   },
-  // Turbopack configuration (if needed)
-  // Note: turbo.root is deprecated in Next.js 16
+  async rewrites() {
+    return [
+      {
+        source: '/manifest.json',
+        destination: '/manifest',
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig

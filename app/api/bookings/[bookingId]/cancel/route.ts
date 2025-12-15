@@ -183,7 +183,7 @@ export async function POST(
       sendEmail({
         to: userEmail,
         ...getCancellationEmail({
-          userName: userEmail.split('@')[0],
+          userName: userEmail?.split('@')[0] || 'User',
           movieTitle: booking.movieTitle,
           refundAmount,
           walletBalance,

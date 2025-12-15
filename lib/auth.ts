@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
             try {
               await execute(
                 'INSERT INTO User (id, email, name, password, role) VALUES (?, ?, ?, ?, ?)',
-                [userId, email, email.split('@')[0] || 'User', credentials.password, 'USER']
+                [userId, email, email?.split('@')[0] || 'User', credentials.password, 'USER']
               )
               // Fetch the newly created user
               dbUser = await queryOne<any>(
@@ -113,7 +113,7 @@ export const authOptions: NextAuthOptions = {
           const user = {
             id: dbUser.id,
             email: dbUser.email,
-            name: dbUser.name || dbUser.email.split('@')[0],
+            name: dbUser.name || dbUser.email?.split('@')[0] || 'User',
             role: dbUser.role || 'USER',
           }
           
@@ -168,7 +168,7 @@ export const authOptions: NextAuthOptions = {
             try {
               await execute(
                 'INSERT INTO User (id, email, name, role) VALUES (?, ?, ?, ?)',
-                [userId, email, session.user.name || email.split('@')[0], 'USER']
+                [userId, email, session.user.name || email?.split('@')[0] || 'User', 'USER']
               )
               dbUser = { id: userId, role: 'USER' }
               console.log('[NextAuth] Created user:', userId)

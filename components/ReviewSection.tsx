@@ -387,7 +387,7 @@ export default function ReviewSection({ movieId }: Props) {
                     </div>
                     <div>
                       <p className="font-clash font-semibold text-white">
-                        {review.userName || review.userEmail.split('@')[0]}
+                        {review.userName || review.userEmail?.split('@')[0] || 'Anonymous'}
                       </p>
                       <p className="text-xs text-gray-500">
                         {formatDateTime(review.createdAt)}
