@@ -35,14 +35,14 @@ export default async function MoviesPage() {
     const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
     const [nowRes, upRes, popRes] = await Promise.all([
-      fetch(`${base}/api/movies/now-playing`, { cache: 'no-store' }).catch(() => ({ ok: false })),
-      fetch(`${base}/api/movies/upcoming`, { cache: 'no-store' }).catch(() => ({ ok: false })),
-      fetch(`${base}/api/movies/popular`, { cache: 'no-store' }).catch(() => ({ ok: false })),
+      fetch(`${base}/api/movies/now-playing`, { cache: 'no-store' }).catch(() => null),
+      fetch(`${base}/api/movies/upcoming`, { cache: 'no-store' }).catch(() => null),
+      fetch(`${base}/api/movies/popular`, { cache: 'no-store' }).catch(() => null),
     ])
 
-    const nowData = nowRes.ok ? await nowRes.json().catch(() => ({ results: [] })) : { results: [] }
-    const upData = upRes.ok ? await upRes.json().catch(() => ({ results: [] })) : { results: [] }
-    const popData = popRes.ok ? await popRes.json().catch(() => ({ results: [] })) : { results: [] }
+    const nowData = nowRes?.ok ? await nowRes.json().catch(() => ({ results: [] })) : { results: [] }
+    const upData = upRes?.ok ? await upRes.json().catch(() => ({ results: [] })) : { results: [] }
+    const popData = popRes?.ok ? await popRes.json().catch(() => ({ results: [] })) : { results: [] }
 
     const now = (nowData.results || []).map(mapMovie)
     const soon = (upData.results || []).map(mapMovie)
