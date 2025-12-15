@@ -254,6 +254,29 @@ export default async function MovieDetailPage({ params }: Props) {
       `, [movie.id])
       
       console.log(`[MovieDetailPage] Found ${showtimes.length} showtimes for movie ${movie.id}`)
+      
+      // If no showtimes found, try generating them again
+      if (showtimes.length === 0) {
+        console.log('[MovieDetailPage] No showtimes found, regenerating...')
+        await generateShowtimes(movie.id)
+        // Try fetching again
+        try {
+          showtimes = await query<any>(`
+            SELECT 
+              s.id, s.startTime, s.price,
+              sc.id as screenId, sc.name as screenName,
+              t.id as theaterId, t.name as theaterName, t.location as theaterLocation
+            FROM Showtime s
+            JOIN Screen sc ON s.screenId = sc.id
+            JOIN Theater t ON sc.theaterId = t.id
+            WHERE s.movieId = ?
+            ORDER BY t.name ASC, s.startTime ASC
+          `, [movie.id])
+          console.log(`[MovieDetailPage] After regeneration, found ${showtimes.length} showtimes`)
+        } catch (retryErr) {
+          console.error('Retry fetch showtimes failed:', retryErr)
+        }
+      }
     } catch (err) {
       console.error('Fetch showtimes failed:', err)
     }
