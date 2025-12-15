@@ -182,6 +182,11 @@ export default async function MovieDetailPage({ params }: Props) {
     }
   }
 
+  // If movie is still null after all attempts, return 404
+  if (!movie) {
+    return notFound()
+  }
+
   // Upsert movie into DB for showtimes
   try {
     await execute(

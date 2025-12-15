@@ -19,15 +19,21 @@ export default async function BookingPage({ params }: Props) {
     [showtime.movieId]
   )
 
+  if (!movie) return notFound()
+
   const screen = await queryOne<any>(
     'SELECT * FROM Screen WHERE id = ?',
     [showtime.screenId]
   )
 
+  if (!screen) return notFound()
+
   const theater = await queryOne<any>(
     'SELECT * FROM Theater WHERE id = ?',
     [screen.theaterId]
   )
+
+  if (!theater) return notFound()
 
   const seats = await query<any>(
     'SELECT * FROM Seat WHERE screenId = ? ORDER BY `row`, `number`',

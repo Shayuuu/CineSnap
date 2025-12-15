@@ -31,21 +31,27 @@ function mapMovie(m: TMDBMovie) {
 }
 
 export default async function MoviesPage() {
-  const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+  try {
+    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
-  const [nowRes, upRes, popRes] = await Promise.all([
-    fetch(`${base}/api/movies/now-playing`, { cache: 'no-store' }),
-    fetch(`${base}/api/movies/upcoming`, { cache: 'no-store' }),
-    fetch(`${base}/api/movies/popular`, { cache: 'no-store' }),
-  ])
+    const [nowRes, upRes, popRes] = await Promise.all([
+      fetch(`${base}/api/movies/now-playing`, { cache: 'no-store' }).catch(() => ({ ok: false })),
+      fetch(`${base}/api/movies/upcoming`, { cache: 'no-store' }).catch(() => ({ ok: false })),
+      fetch(`${base}/api/movies/popular`, { cache: 'no-store' }).catch(() => ({ ok: false })),
+    ])
 
-  const nowData = nowRes.ok ? await nowRes.json() : { results: [] }
-  const upData = upRes.ok ? await upRes.json() : { results: [] }
-  const popData = popRes.ok ? await popRes.json() : { results: [] }
+    const nowData = nowRes.ok ? await nowRes.json().catch(() => ({ results: [] })) : { results: [] }
+    const upData = upRes.ok ? await upRes.json().catch(() => ({ results: [] })) : { results: [] }
+    const popData = popRes.ok ? await popRes.json().catch(() => ({ results: [] })) : { results: [] }
 
-  const now = (nowData.results || []).map(mapMovie)
-  const soon = (upData.results || []).map(mapMovie)
-  const popular = (popData.results || []).map(mapMovie)
+    const now = (nowData.results || []).map(mapMovie)
+    const soon = (upData.results || []).map(mapMovie)
+    const popular = (popData.results || []).map(mapMovie)
 
-  return <MoviesExplorer nowPlaying={now} upcoming={soon} popular={popular} />
+    return <MoviesExplorer nowPlaying={now} upcoming={soon} popular={popular} />
+  } catch (error) {
+    console.error('Error loading movies page:', error)
+    // Return empty data on error
+    return <MoviesExplorer nowPlaying={[]} upcoming={[]} popular={[]} />
+  }
 }
