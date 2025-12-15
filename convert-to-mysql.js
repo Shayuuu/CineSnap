@@ -19,3 +19,4 @@ PostgreSQL -> MySQL Conversion Patterns:
 
 console.log('See MYSQL_CONVERSION_GUIDE.md for detailed conversion steps')
 
+

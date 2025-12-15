@@ -41,3 +41,4 @@ After updating, restart your dev server and check the logs. You should see:
 
 **The code fix should work - make sure your connection string is correct!**
 
+

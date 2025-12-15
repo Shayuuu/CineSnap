@@ -151,3 +151,4 @@ Your app is now fully migrated to MySQL Workbench. All queries have been convert
 
 **Need help?** Check `MYSQL_SETUP.md` for detailed setup instructions!
 
+

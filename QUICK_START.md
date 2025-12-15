@@ -116,3 +116,4 @@ Visit: http://localhost:3000
 - `SUPABASE_SETUP.md` - Complete Supabase setup
 - `VERCEL_DEPLOYMENT.md` - Deployment guide
 
+

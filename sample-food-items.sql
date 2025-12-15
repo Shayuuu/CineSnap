@@ -13,3 +13,4 @@ INSERT IGNORE INTO `FoodItem` (`id`, `name`, `description`, `price`, `category`,
 ('food11', 'Combo 2', 'Medium Popcorn + 2 Drinks', 28000, 'COMBO', TRUE),
 ('food12', 'Combo 3', 'Small Popcorn + 1 Drink', 15000, 'COMBO', TRUE);
 
+

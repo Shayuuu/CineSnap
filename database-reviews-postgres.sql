@@ -24,3 +24,4 @@ $$ language 'plpgsql';
 CREATE TRIGGER update_review_updated_at BEFORE UPDATE ON "Review"
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
+

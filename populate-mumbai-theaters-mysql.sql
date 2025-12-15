@@ -268,3 +268,4 @@ DROP PROCEDURE IF EXISTS GenerateSeatsForScreen;
 -- - Showtimes will be generated dynamically when movies are added
 -- =====================================================
 
+

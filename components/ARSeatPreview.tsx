@@ -153,3 +153,4 @@ export default function ARSeatPreview({ seats, selectedSeats, onSeatClick }: Pro
   )
 }
 
+

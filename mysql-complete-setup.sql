@@ -367,3 +367,4 @@ SHOW TABLES;
 -- Next: Run populate-mumbai-theaters.sql to add theaters and seats
 -- =====================================================
 
+

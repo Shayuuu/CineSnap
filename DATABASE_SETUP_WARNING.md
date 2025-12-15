@@ -63,3 +63,4 @@ Once you create the Vitess (MySQL) database:
 
 **Don't proceed with Postgres - it won't work with our app!** 🚨
 
+

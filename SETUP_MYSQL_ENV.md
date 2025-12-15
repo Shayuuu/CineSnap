@@ -186,3 +186,4 @@ UPSTASH_REDIS_TOKEN=your-redis-token
 
 **Need more help?** Check `MYSQL_SETUP.md` for complete setup guide!
 
+

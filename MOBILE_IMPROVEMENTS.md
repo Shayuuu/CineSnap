@@ -146,3 +146,4 @@
 - Smooth transitions between breakpoints
 - Consistent design language across devices
 
+

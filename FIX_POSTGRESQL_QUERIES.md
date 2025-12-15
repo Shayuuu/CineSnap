@@ -68,3 +68,4 @@ await queryOne('SELECT * FROM "User" WHERE email = $1', [email])
 
 **All critical queries have been fixed!** 🎉
 
+

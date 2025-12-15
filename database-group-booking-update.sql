@@ -10,3 +10,4 @@ UPDATE `BookingGroup`
 SET `joinToken` = CONCAT('GB', SUBSTRING(MD5(CONCAT(id, createdAt)), 1, 12))
 WHERE `joinToken` IS NULL;
 
+

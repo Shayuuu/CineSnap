@@ -94,3 +94,4 @@ export default function WishlistButton({ movieId, className = '' }: Props) {
   )
 }
 
+

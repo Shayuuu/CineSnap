@@ -116,3 +116,4 @@ After setting up `DATABASE_URL`:
 **Your Supabase Project**: https://giphqdjlnjbmrsspaspc.supabase.co
 **Dashboard**: https://supabase.com/dashboard/project/giphqdjlnjbmrsspaspc
 
+

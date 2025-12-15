@@ -99,3 +99,4 @@ Should return `True`
    - Must include `?sslmode=require` at the end
    - Password should be URL-encoded if it has special characters
 
+

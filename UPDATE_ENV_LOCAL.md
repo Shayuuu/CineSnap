@@ -119,3 +119,4 @@ C:\Users\Rutaab\Desktop\Personal\CineSnap\textbookmyseat\.env.local
 
 See `FIX_DATABASE_CONNECTION.md` for detailed troubleshooting.
 
+

@@ -126,3 +126,4 @@ DATABASE_URL=postgresql://postgres:My%40Pass%23123@db.giphqdjlnjbmrsspaspc.supab
 
 **The SSL config in code is correct - the issue is likely the connection string format!** 🔧
 
+

@@ -9,3 +9,4 @@ UPDATE `Movie` SET `posterUrl` = 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI
 UPDATE `Movie` SET `posterUrl` = 'https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg' WHERE `id` = 'movie4' AND (`posterUrl` IS NULL OR `posterUrl` = '/posters/matrix.jpg');
 UPDATE `Movie` SET `posterUrl` = 'https://image.tmdb.org/t/p/w500/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg' WHERE `id` = 'movie5' AND (`posterUrl` IS NULL OR `posterUrl` = '/posters/pulp-fiction.jpg');
 
+

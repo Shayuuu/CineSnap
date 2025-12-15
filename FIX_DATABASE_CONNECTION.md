@@ -214,3 +214,4 @@ DATABASE_URL=postgresql://postgres:PASSWORD@db.giphqdjlnjbmrsspaspc.supabase.co:
 
 **Need more help?** Check the console logs for specific error messages!
 
+

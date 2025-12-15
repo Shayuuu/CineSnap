@@ -140,3 +140,4 @@ CREATE TABLE IF NOT EXISTS "WalletTransaction" (
   CONSTRAINT "WalletTransaction_bookingId_fkey" FOREIGN KEY ("bookingId") REFERENCES "Booking"(id) ON DELETE SET NULL
 );
 
+

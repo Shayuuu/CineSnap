@@ -118,3 +118,4 @@ CREATE INDEX IF NOT EXISTS "idx_booking_user" ON "Booking"("userId");
 CREATE INDEX IF NOT EXISTS "idx_booking_showtime" ON "Booking"("showtimeId");
 CREATE INDEX IF NOT EXISTS "idx_seatlock_showtime_seat" ON "SeatLock"("showtimeId", "seatId");
 
+

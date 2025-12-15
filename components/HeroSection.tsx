@@ -101,11 +101,6 @@ export default function HeroSection() {
     return () => clearInterval(timer)
   }, [mounted])
 
-  const particlesInit = async (engine: any) => {
-    const { loadSlim } = await import('@tsparticles/slim')
-    await loadSlim(engine)
-  }
-
   if (!mounted) {
     return (
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -124,7 +119,6 @@ export default function HeroSection() {
       {mounted && (
         <Particles
           id="tsparticles"
-          init={particlesInit}
           className="absolute inset-0 z-0"
           options={{
             fullScreen: { enable: false },
