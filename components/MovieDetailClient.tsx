@@ -43,14 +43,25 @@ type Props = {
   trailerUrl?: string | null
 }
 
-export default function MovieDetailClient({ movie, showtimes, recommendations = [], trailerUrl }: Props) {
+export default function MovieDetailClient({ movie, showtimes = [], recommendations = [], trailerUrl }: Props) {
   const [trailerOpen, setTrailerOpen] = useState(false)
+  
+  // Ensure movie exists
+  if (!movie) {
+    return (
+      <div className="min-h-screen pt-20 flex items-center justify-center">
+        <p className="text-white/70">Movie not found</p>
+      </div>
+    )
+  }
+  
   // Group showtimes by theater
-  const showtimesByTheater = showtimes.reduce((acc, show) => {
-    const theaterKey = show.theaterId || show.theaterName
+  const showtimesByTheater = (showtimes || []).reduce((acc, show) => {
+    if (!show) return acc
+    const theaterKey = show.theaterId || show.theaterName || 'unknown'
     if (!acc[theaterKey]) {
       acc[theaterKey] = {
-        theaterName: show.theaterName,
+        theaterName: show.theaterName || 'Unknown Theater',
         theaterLocation: show.theaterLocation,
         showtimes: []
       }
@@ -61,34 +72,52 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
 
   // Format time helper
   const formatTime = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+    try {
+      if (!dateStr) return 'N/A'
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return 'N/A'
+      return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+    } catch {
+      return 'N/A'
+    }
   }
 
   // Format date helper
   const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    const today = new Date()
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    
-    if (date.toDateString() === today.toDateString()) {
-      return 'Today'
-    } else if (date.toDateString() === tomorrow.toDateString()) {
-      return 'Tomorrow'
-    } else {
-      return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    try {
+      if (!dateStr) return 'N/A'
+      const date = new Date(dateStr)
+      if (isNaN(date.getTime())) return 'N/A'
+      const today = new Date()
+      const tomorrow = new Date(today)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      
+      if (date.toDateString() === today.toDateString()) {
+        return 'Today'
+      } else if (date.toDateString() === tomorrow.toDateString()) {
+        return 'Tomorrow'
+      } else {
+        return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      }
+    } catch {
+      return 'N/A'
     }
   }
 
   // Group showtimes by date within each theater
   const groupByDate = (shows: typeof showtimes) => {
+    if (!shows || !Array.isArray(shows)) return {}
     return shows.reduce((acc, show) => {
-      const date = new Date(show.startTime).toDateString()
-      if (!acc[date]) {
-        acc[date] = []
+      if (!show || !show.startTime) return acc
+      try {
+        const date = new Date(show.startTime).toDateString()
+        if (!acc[date]) {
+          acc[date] = []
+        }
+        acc[date].push(show)
+      } catch {
+        // Skip invalid dates
       }
-      acc[date].push(show)
       return acc
     }, {} as Record<string, typeof showtimes>)
   }
@@ -243,7 +272,7 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
         )}
 
         {/* Showtimes Section - Grouped by Theater */}
-        {showtimes.length > 0 ? (
+        {showtimes && showtimes.length > 0 ? (
           <div>
             <h2 className="text-2xl sm:text-3xl font-clash font-bold mb-4 sm:mb-6">
               <span className="text-white">Available Showtimes</span>
@@ -276,12 +305,13 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
                       {Object.entries(showtimesByDate).map(([dateKey, dateShows]) => (
                         <div key={dateKey}>
                           <h4 className="text-xs sm:text-sm font-clash font-semibold text-white/70 mb-2 sm:mb-3">
-                            {formatDate(dateShows[0].startTime)}
+                            {dateShows && dateShows[0]?.startTime ? formatDate(dateShows[0].startTime) : dateKey}
                           </h4>
                           
                           {/* Screen groups */}
                           {Object.entries(
-                            dateShows.reduce((acc, show) => {
+                            (dateShows || []).reduce((acc, show) => {
+                              if (!show || !show.screenName) return acc
                               if (!acc[show.screenName]) {
                                 acc[show.screenName] = []
                               }
@@ -292,7 +322,7 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
                             <div key={screenName} className="mb-3 sm:mb-4 last:mb-0">
                               <p className="text-[10px] sm:text-xs text-gray-500 mb-2">{screenName}</p>
                               <div className="flex flex-wrap gap-2">
-                                {screenShows.map((show) => (
+                                {(screenShows || []).filter(show => show && show.id).map((show) => (
                                   <Link key={show.id} href={`/booking/${show.id}`} className="touch-manipulation">
                                     <motion.button
                                       whileHover={{ scale: 1.05 }}
@@ -304,7 +334,7 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
                                           {formatTime(show.startTime)}
                                         </p>
                                         <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">
-                                          ₹{show.price / 100}
+                                          ₹{show.price ? (show.price / 100) : 0}
                                         </p>
                                       </div>
                                     </motion.button>
