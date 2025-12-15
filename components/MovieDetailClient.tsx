@@ -106,20 +106,27 @@ export default function MovieDetailClient({ movie, showtimes = [], recommendatio
 
   // Group showtimes by date within each theater
   const groupByDate = (shows: typeof showtimes) => {
-    if (!shows || !Array.isArray(shows)) return {}
-    return shows.reduce((acc, show) => {
+    if (!shows || !Array.isArray(shows) || shows.length === 0) return {}
+    
+    const grouped = shows.reduce((acc, show) => {
       if (!show || !show.startTime) return acc
       try {
-        const date = new Date(show.startTime).toDateString()
-        if (!acc[date]) {
-          acc[date] = []
+        const date = new Date(show.startTime)
+        if (isNaN(date.getTime())) return acc
+        
+        const dateKey = date.toDateString()
+        if (!acc[dateKey]) {
+          acc[dateKey] = []
         }
-        acc[date].push(show)
-      } catch {
+        acc[dateKey].push(show)
+      } catch (err) {
         // Skip invalid dates
+        console.error('Error grouping showtime by date:', err, show)
       }
       return acc
     }, {} as Record<string, typeof showtimes>)
+    
+    return grouped
   }
 
   return (
@@ -280,7 +287,12 @@ export default function MovieDetailClient({ movie, showtimes = [], recommendatio
           
             <div className="space-y-4 sm:space-y-6">
               {Object.entries(showtimesByTheater).map(([theaterKey, theaterData], theaterIndex) => {
-                const showtimesByDate = groupByDate(theaterData.showtimes)
+                const showtimesByDate = groupByDate(theaterData.showtimes || [])
+                
+                // Debug: log if no showtimes
+                if (!theaterData.showtimes || theaterData.showtimes.length === 0) {
+                  console.log('[MovieDetailClient] No showtimes for theater:', theaterData.theaterName)
+                }
                 
                 return (
                   <motion.div
@@ -302,49 +314,82 @@ export default function MovieDetailClient({ movie, showtimes = [], recommendatio
 
                     {/* Showtimes grouped by date */}
                     <div className="space-y-4 sm:space-y-6">
-                      {Object.entries(showtimesByDate).map(([dateKey, dateShows]) => (
-                        <div key={dateKey}>
-                          <h4 className="text-xs sm:text-sm font-clash font-semibold text-white/70 mb-2 sm:mb-3">
-                            {dateShows && dateShows[0]?.startTime ? formatDate(dateShows[0].startTime) : dateKey}
-                          </h4>
+                      {Object.keys(showtimesByDate).length > 0 ? (
+                        Object.entries(showtimesByDate).map(([dateKey, dateShows]) => {
+                          if (!dateShows || dateShows.length === 0) return null
                           
-                          {/* Screen groups */}
-                          {Object.entries(
-                            (dateShows || []).reduce((acc, show) => {
-                              if (!show || !show.screenName) return acc
-                              if (!acc[show.screenName]) {
-                                acc[show.screenName] = []
-                              }
-                              acc[show.screenName].push(show)
-                              return acc
-                            }, {} as Record<string, typeof dateShows>)
-                          ).map(([screenName, screenShows]) => (
-                            <div key={screenName} className="mb-3 sm:mb-4 last:mb-0">
-                              <p className="text-[10px] sm:text-xs text-gray-500 mb-2">{screenName}</p>
-                              <div className="flex flex-wrap gap-2">
-                                {(screenShows || []).filter(show => show && show.id).map((show) => (
-                                  <Link key={show.id} href={`/booking/${show.id}`} className="touch-manipulation">
-                                    <motion.button
-                                      whileHover={{ scale: 1.05 }}
-                                      whileTap={{ scale: 0.95 }}
-                                      className="px-3 sm:px-4 py-2 sm:py-2.5 glass rounded-lg border border-white/10 hover:border-white/30 transition-all group min-w-[70px] sm:min-w-[80px]"
-                                    >
-                                      <div className="text-center">
-                                        <p className="text-xs sm:text-sm font-clash font-semibold text-white group-hover:text-white/90">
-                                          {formatTime(show.startTime)}
-                                        </p>
-                                        <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">
-                                          ₹{show.price ? (show.price / 100) : 0}
-                                        </p>
-                                      </div>
-                                    </motion.button>
-                                  </Link>
-                                ))}
-                              </div>
+                          return (
+                            <div key={dateKey}>
+                              <h4 className="text-xs sm:text-sm font-clash font-semibold text-white/70 mb-2 sm:mb-3">
+                                {dateShows[0]?.startTime ? formatDate(dateShows[0].startTime) : dateKey}
+                              </h4>
+                              
+                              {/* Screen groups */}
+                              {Object.entries(
+                                (dateShows || []).reduce((acc, show) => {
+                                  if (!show || !show.screenName) return acc
+                                  if (!acc[show.screenName]) {
+                                    acc[show.screenName] = []
+                                  }
+                                  acc[show.screenName].push(show)
+                                  return acc
+                                }, {} as Record<string, typeof dateShows>)
+                              ).map(([screenName, screenShows]) => (
+                                <div key={screenName} className="mb-3 sm:mb-4 last:mb-0">
+                                  <p className="text-[10px] sm:text-xs text-gray-500 mb-2">{screenName}</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {(screenShows || []).filter(show => show && show.id && show.startTime).map((show) => (
+                                      <Link key={show.id} href={`/booking/${show.id}`} className="touch-manipulation">
+                                        <motion.button
+                                          whileHover={{ scale: 1.05 }}
+                                          whileTap={{ scale: 0.95 }}
+                                          className="px-3 sm:px-4 py-2 sm:py-2.5 glass rounded-lg border border-white/10 hover:border-white/30 transition-all group min-w-[70px] sm:min-w-[80px]"
+                                        >
+                                          <div className="text-center">
+                                            <p className="text-xs sm:text-sm font-clash font-semibold text-white group-hover:text-white/90">
+                                              {formatTime(show.startTime)}
+                                            </p>
+                                            <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">
+                                              ₹{show.price ? (show.price / 100) : 0}
+                                            </p>
+                                          </div>
+                                        </motion.button>
+                                      </Link>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          )
+                        })
+                      ) : theaterData.showtimes && theaterData.showtimes.length > 0 ? (
+                        // Fallback: show showtimes without date grouping if grouping fails
+                        <div>
+                          <p className="text-xs sm:text-sm text-gray-400 mb-3">Today</p>
+                          <div className="flex flex-wrap gap-2">
+                            {theaterData.showtimes.filter(show => show && show.id && show.startTime).map((show) => (
+                              <Link key={show.id} href={`/booking/${show.id}`} className="touch-manipulation">
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  className="px-3 sm:px-4 py-2 sm:py-2.5 glass rounded-lg border border-white/10 hover:border-white/30 transition-all group min-w-[70px] sm:min-w-[80px]"
+                                >
+                                  <div className="text-center">
+                                    <p className="text-xs sm:text-sm font-clash font-semibold text-white group-hover:text-white/90">
+                                      {formatTime(show.startTime)}
+                                    </p>
+                                    <p className="text-[10px] sm:text-xs text-gray-400 mt-0.5 sm:mt-1">
+                                      ₹{show.price ? (show.price / 100) : 0}
+                                    </p>
+                                  </div>
+                                </motion.button>
+                              </Link>
+                            ))}
+                          </div>
                         </div>
-                      ))}
+                      ) : (
+                        <p className="text-white/60 text-sm">No showtimes available</p>
+                      )}
                     </div>
                   </motion.div>
                 )
