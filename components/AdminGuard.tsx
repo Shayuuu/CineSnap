@@ -19,8 +19,7 @@ export default function AdminGuard({ children }: Props) {
       router.replace('/login')
       return
     }
-    // @ts-ignore
-    if (session?.user?.role !== 'ADMIN') {
+    if ((session?.user as any)?.role !== 'ADMIN') {
       router.replace('/movies')
     }
   }, [session, status, router])
@@ -46,8 +45,7 @@ export default function AdminGuard({ children }: Props) {
     return null
   }
 
-  // @ts-ignore
-  if (session.user?.role !== 'ADMIN') {
+  if ((session.user as any)?.role !== 'ADMIN') {
     return null
   }
 
