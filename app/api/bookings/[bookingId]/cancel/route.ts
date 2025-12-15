@@ -110,12 +110,13 @@ export async function POST(
 
       // Add refund to user wallet
       // Check if wallet exists
-      let wallet = await connection.query(
+      const [walletRows] = await connection.query<any[]>(
         'SELECT id FROM UserWallet WHERE userId = ?',
         [user.id]
       )
 
-      if (wallet.length === 0) {
+      let wallet = walletRows as any[]
+      if (!wallet || wallet.length === 0) {
         const walletId = randomBytes(12).toString('hex')
         await connection.query(
           'INSERT INTO UserWallet (id, userId, balance) VALUES (?, ?, ?)',
