@@ -32,12 +32,27 @@ function mapMovie(m: TMDBMovie) {
 
 export default async function MoviesPage() {
   try {
-    const base = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    // Determine base URL for API calls
+    // In production/Vercel, use VERCEL_URL, otherwise use NEXT_PUBLIC_BASE_URL or localhost
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+
+    console.log('[MoviesPage] Fetching movies from:', baseUrl)
 
     const [nowRes, upRes, popRes] = await Promise.all([
-      fetch(`${base}/api/movies/now-playing`, { cache: 'no-store' }).catch(() => null),
-      fetch(`${base}/api/movies/upcoming`, { cache: 'no-store' }).catch(() => null),
-      fetch(`${base}/api/movies/popular`, { cache: 'no-store' }).catch(() => null),
+      fetch(`${baseUrl}/api/movies/now-playing`, { cache: 'no-store' }).catch((err) => {
+        console.error('[MoviesPage] Error fetching now-playing:', err)
+        return null
+      }),
+      fetch(`${baseUrl}/api/movies/upcoming`, { cache: 'no-store' }).catch((err) => {
+        console.error('[MoviesPage] Error fetching upcoming:', err)
+        return null
+      }),
+      fetch(`${baseUrl}/api/movies/popular`, { cache: 'no-store' }).catch((err) => {
+        console.error('[MoviesPage] Error fetching popular:', err)
+        return null
+      }),
     ])
 
     const nowData = nowRes?.ok ? await nowRes.json().catch(() => ({ results: [] })) : { results: [] }

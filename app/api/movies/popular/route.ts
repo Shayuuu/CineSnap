@@ -8,27 +8,30 @@ export async function GET(req: NextRequest) {
 
   const url = `${TMDB_BASE}/movie/popular?api_key=${apiKey}&language=en-IN&region=IN&page=1`
 
-  const res = await fetch(url, { next: { revalidate: 3600 } })
-  if (!res.ok) {
-    return Response.json({ error: 'Failed to fetch TMDb popular' }, { status: 500 })
-  }
+  try {
+    const res = await fetch(url, { next: { revalidate: 3600 } })
+    if (!res.ok) {
+      console.error('TMDb API error:', res.status, res.statusText)
+      return Response.json({ results: [] })
+    }
 
-  const data = await res.json()
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  // Only show movies from the last 2 years (recent popular movies)
-  const twoYearsAgo = new Date(today)
-  twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
-  
-  const mapped = (data.results || [])
-    .filter((m: any) => {
-      if (!m.release_date) return false
-      const releaseDate = new Date(m.release_date)
-      releaseDate.setHours(0, 0, 0, 0)
-      // Must be released within the last 2 years (not too old)
-      return releaseDate >= twoYearsAgo && releaseDate <= today
-    })
+    const data = await res.json()
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // Show movies from the last 5 years (more lenient for showcase)
+    const fiveYearsAgo = new Date(today)
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5)
+    
+    const mapped = (data.results || [])
+      .filter((m: any) => {
+        // If no release date, include it
+        if (!m.release_date) return true
+        const releaseDate = new Date(m.release_date)
+        releaseDate.setHours(0, 0, 0, 0)
+        // Must be released within the last 5 years (more lenient)
+        return releaseDate >= fiveYearsAgo && releaseDate <= today
+      })
     .map((m: any) => ({
       id: String(m.id),
       title: m.title,
@@ -41,6 +44,10 @@ export async function GET(req: NextRequest) {
       genres: m.genre_ids || [],
     }))
 
-  return Response.json({ results: mapped })
+    return Response.json({ results: mapped })
+  } catch (error: any) {
+    console.error('Error fetching popular movies:', error)
+    return Response.json({ results: [] })
+  }
 }
 

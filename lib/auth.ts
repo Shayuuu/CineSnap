@@ -33,6 +33,9 @@ export const authOptions: NextAuthOptions = {
           const email = credentials.email.trim().toLowerCase()
           console.log('[NextAuth] Searching for user with email:', email)
           
+          // Check if we're in showcase mode
+          const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
+          
           // Check if user exists (case-insensitive email search)
           let dbUser = await queryOne<any>(
             'SELECT * FROM User WHERE LOWER(email) = ?', 
@@ -46,6 +49,34 @@ export const authOptions: NextAuthOptions = {
               'SELECT * FROM User WHERE email = ?', 
               [credentials.email.trim()]
             )
+          }
+          
+          // In showcase mode, auto-create user if they don't exist
+          if (!dbUser && isShowcaseMode) {
+            console.log('[NextAuth] Showcase mode: Auto-creating user:', email)
+            const { randomBytes } = await import('crypto')
+            const { execute } = await import('@/lib/db')
+            const userId = randomBytes(16).toString('hex')
+            
+            try {
+              await execute(
+                'INSERT INTO User (id, email, name, password, role) VALUES (?, ?, ?, ?, ?)',
+                [userId, email, email.split('@')[0] || 'User', credentials.password, 'USER']
+              )
+              // Fetch the newly created user
+              dbUser = await queryOne<any>(
+                'SELECT * FROM User WHERE id = ?',
+                [userId]
+              )
+              console.log('[NextAuth] Created user:', userId)
+            } catch (createError: any) {
+              console.error('[NextAuth] Failed to create user:', createError)
+              // Try to fetch again in case it was created by another request
+              dbUser = await queryOne<any>(
+                'SELECT * FROM User WHERE LOWER(email) = ?',
+                [email]
+              )
+            }
           }
           
           if (!dbUser) {
@@ -64,9 +95,21 @@ export const authOptions: NextAuthOptions = {
           
           // For showcase mode or development: accept password if it matches mock user password
           // In production, you would verify: await bcrypt.compare(credentials.password, dbUser.passwordHash)
-          if (dbUser.password && dbUser.password !== credentials.password && dbUser.passwordHash !== credentials.password) {
+          const passwordMatch = 
+            (dbUser.password && dbUser.password === credentials.password) ||
+            (dbUser.passwordHash && dbUser.passwordHash === credentials.password)
+          
+          // In showcase mode (no DB_HOST), allow any password for demo purposes
+          const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
+          
+          if (!passwordMatch && !isShowcaseMode) {
             console.error('[NextAuth] Password mismatch')
             return null
+          }
+          
+          // In showcase mode, log that we're accepting any password
+          if (isShowcaseMode && !passwordMatch) {
+            console.log('[NextAuth] Showcase mode: Accepting password for demo purposes')
           }
           
           const user = {

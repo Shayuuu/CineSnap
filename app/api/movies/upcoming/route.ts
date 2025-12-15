@@ -8,24 +8,29 @@ export async function GET(req: NextRequest) {
 
   const url = `${TMDB_BASE}/movie/upcoming?api_key=${apiKey}&language=en-IN&region=IN&page=1`
 
-  const res = await fetch(url, { next: { revalidate: 3600 } })
-  if (!res.ok) {
-    return Response.json({ error: 'Failed to fetch TMDb upcoming' }, { status: 500 })
-  }
+  try {
+    const res = await fetch(url, { next: { revalidate: 3600 } })
+    if (!res.ok) {
+      console.error('TMDb API error:', res.status, res.statusText)
+      return Response.json({ results: [] })
+    }
 
-  const data = await res.json()
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  
-  // Only show movies with release dates in the future (coming soon)
-  const mapped = (data.results || [])
-    .filter((m: any) => {
-      if (!m.release_date) return false
-      const releaseDate = new Date(m.release_date)
-      releaseDate.setHours(0, 0, 0, 0)
-      // Must be in the future (not yet released)
-      return releaseDate > today
-    })
+    const data = await res.json()
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    // Show movies with release dates in the future or very recent (coming soon)
+    const mapped = (data.results || [])
+      .filter((m: any) => {
+        // If no release date, include it
+        if (!m.release_date) return true
+        const releaseDate = new Date(m.release_date)
+        releaseDate.setHours(0, 0, 0, 0)
+        // Must be in the future or released within last 7 days (more lenient)
+        const sevenDaysAgo = new Date(today)
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+        return releaseDate > sevenDaysAgo
+      })
     .map((m: any) => ({
       id: String(m.id),
       title: m.title,
@@ -38,6 +43,10 @@ export async function GET(req: NextRequest) {
       genres: m.genre_ids || [],
     }))
 
-  return Response.json({ results: mapped })
+    return Response.json({ results: mapped })
+  } catch (error: any) {
+    console.error('Error fetching upcoming movies:', error)
+    return Response.json({ results: [] })
+  }
 }
 
