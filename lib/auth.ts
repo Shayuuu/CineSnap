@@ -93,10 +93,9 @@ export const authOptions: NextAuthOptions = {
       try {
         // First, check if user ID is already in token (from authorize)
         if (token?.sub || token?.userId) {
-          session.user.id = (token.sub || token.userId) as string
-          // @ts-ignore
-          session.user.role = token.role as string
-          console.log('[NextAuth] Session callback: Using user ID from token:', session.user.id)
+          (session.user as any).id = (token.sub || token.userId) as string
+          (session.user as any).role = token.role as string
+          console.log('[NextAuth] Session callback: Using user ID from token:', (session.user as any).id)
           return session
         }
 
@@ -146,9 +145,8 @@ export const authOptions: NextAuthOptions = {
           }
           
           if (dbUser) {
-            session.user.id = dbUser.id
-            // @ts-ignore
-            session.user.role = dbUser.role
+            (session.user as any).id = dbUser.id
+            (session.user as any).role = dbUser.role
             console.log('[NextAuth] Session callback: Set user ID', dbUser.id)
           } else {
             console.warn('[NextAuth] Session callback: User not found in database for email:', email)

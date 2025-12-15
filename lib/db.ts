@@ -5,7 +5,7 @@ const IS_SHOWCASE_MODE = process.env.SHOWCASE_MODE === 'true' || !process.env.DB
 
 let pool: mysql.Pool | null = null
 
-function getPool() {
+function createPool() {
   if (!pool) {
     // MySQL connection configuration
     const dbHost = process.env.DB_HOST || 'localhost'
@@ -94,7 +94,10 @@ export async function query<T = any>(sql: string, params?: any[]): Promise<T[]> 
   }
 
   try {
-    const pool = getPool()
+    const pool = createPool()
+    if (!pool) {
+      throw new Error('Database pool is not initialized')
+    }
     const [rows] = await pool.execute(sql, params || [])
     return rows as T[]
   } catch (error: any) {
@@ -124,7 +127,10 @@ export async function execute(sql: string, params?: any[]): Promise<any> {
   }
 
   try {
-    const pool = getPool()
+    const pool = createPool()
+    if (!pool) {
+      throw new Error('Database pool is not initialized')
+    }
     const [result] = await pool.execute(sql, params || [])
     return result
   } catch (error: any) {
@@ -136,8 +142,46 @@ export async function execute(sql: string, params?: any[]): Promise<any> {
 }
 
 export async function getConnection(): Promise<mysql.PoolConnection> {
-  const pool = getPool()
+  if (IS_SHOWCASE_MODE) {
+    // Return a mock connection object for showcase mode
+    // Transactions aren't needed in showcase mode, but we need to return something
+    return {
+      query: async () => [[], []],
+      execute: async () => [[], []],
+      beginTransaction: async () => {},
+      commit: async () => {},
+      rollback: async () => {},
+      release: async () => {},
+    } as any
+  }
+  
+  const pool = createPool()
+  if (!pool) {
+    throw new Error('Database pool is not initialized')
+  }
   return await pool.getConnection()
 }
 
-export { getPool }
+export function getPool(): mysql.Pool {
+  if (IS_SHOWCASE_MODE) {
+    // Return a mock pool object for showcase mode
+    return {
+      getConnection: async () => ({
+        query: async () => [[], []],
+        execute: async () => [[], []],
+        beginTransaction: async () => {},
+        commit: async () => {},
+        rollback: async () => {},
+        release: async () => {},
+      }),
+      query: async () => [[], []],
+      execute: async () => [[], []],
+    } as any
+  }
+  
+  const pool = createPool()
+  if (!pool) {
+    throw new Error('Database pool is not initialized')
+  }
+  return pool
+}

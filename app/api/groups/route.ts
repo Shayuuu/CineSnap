@@ -1,6 +1,7 @@
 import { query, queryOne, execute } from '@/lib/db'
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 import { randomBytes } from 'crypto'
 
 // GET - List groups or get a specific group
@@ -100,7 +101,7 @@ export async function GET(req: NextRequest) {
 // POST - Create a new group
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     if (!session || !session.user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }

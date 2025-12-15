@@ -1,12 +1,12 @@
 'use client'
 
 import { signIn } from 'next-auth/react'
-import { FormEvent, useState, useEffect } from 'react'
+import { FormEvent, useState, useEffect, Suspense } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { useSearchParams, useRouter } from 'next/navigation'
 
-export default function LoginPage() {
+function LoginForm() {
   const [isSignup, setIsSignup] = useState(false)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -338,5 +338,24 @@ export default function LoginPage() {
         </div>
       </motion.div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6 flex items-center justify-center">
+        <div className="w-full max-w-md">
+          <div className="glass-strong rounded-xl sm:rounded-2xl p-5 sm:p-6 md:p-8 border border-white/10">
+            <div className="text-center">
+              <h1 className="text-2xl sm:text-3xl font-clash font-bold text-white mb-4">CineSnap</h1>
+              <p className="text-gray-400">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

@@ -190,7 +190,7 @@ function TicketDocument({
   theaterName,
   screenName,
   themeColors
-}: TicketPDFProps & { qrDataUrl?: string; qrData?: string; qrDataUrl?: string }) {
+}: TicketPDFProps & { qrDataUrl?: string }) {
   const seatDisplay = seats.length > 0 ? seats.join(', ') : 'N/A'
   const screenNumber = screenName ? screenName.replace(/[^0-9]/g, '') || '01' : '01'
   const ticketStyles = createStyles(!!posterUrl)

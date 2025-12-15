@@ -1,6 +1,7 @@
 import { query, queryOne, execute } from '@/lib/db'
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 import { randomBytes } from 'crypto'
 
 // GET - Fetch reviews for a movie (no auth required)
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
     console.log('[Reviews API] POST request received')
     console.log('[Reviews API] Request headers:', Object.fromEntries(req.headers.entries()))
     
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     console.log('[Reviews API] Session:', session ? {
       hasUser: !!session.user,
       userEmail: session.user?.email,
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
 // DELETE - Delete a review
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     
     if (!session || !session.user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })

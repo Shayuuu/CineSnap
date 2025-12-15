@@ -215,14 +215,16 @@ function mockExecute(sql: string, params?: any[]): any {
   // Insert users
   if (lowerSql.includes('insert') && lowerSql.includes('user')) {
     const userId = `user-${Date.now()}`
-    const email = params?.[1]
-    const name = params?.[0]
+    const email = params?.[1] || params?.[0]
+    const name = params?.[2] || params?.[1] || email?.split('@')[0] || 'User'
+    const password = params?.[3] || 'defaultpassword'
     
     MOCK_USERS.push({
       id: userId,
-      email,
-      name,
-      role: 'USER',
+      email: email || `user-${userId}@example.com`,
+      name: name || 'User',
+      password: password,
+      role: params?.[4] || 'USER',
     })
     
     return { insertId: userId }

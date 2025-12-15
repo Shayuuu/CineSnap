@@ -1,6 +1,7 @@
 import { queryOne, execute } from '@/lib/db'
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
 import { randomBytes } from 'crypto'
 
 export async function POST(
@@ -9,7 +10,7 @@ export async function POST(
 ) {
   try {
     const { groupId } = await params
-    const session = await getServerSession()
+    const session = await getServerSession(authOptions)
     
     if (!session || !session.user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
