@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   description: 'Browse now showing, upcoming, and popular movies',
 }
 
+// Force dynamic rendering since we're fetching from external API
+export const dynamic = 'force-dynamic'
+
 type TMDBMovie = {
   id: string
   title: string
@@ -37,7 +40,7 @@ async function fetchMovies(endpoint: string, apiKey: string) {
   try {
     const url = `${TMDB_BASE}${endpoint}&api_key=${apiKey}&language=en-US&page=1`
     const res = await fetch(url, { 
-      cache: 'no-store',
+      next: { revalidate: 3600 }, // Revalidate every hour
       headers: {
         'Accept': 'application/json',
       }
