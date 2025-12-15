@@ -216,8 +216,10 @@ export default async function MovieDetailPage({ params }: Props) {
     console.error('Recommendations fetch failed:', err)
   }
 
-  // Check if movie is still in theaters (released within last 3 months)
-  const isMovieInTheaters = (() => {
+  // In showcase mode, always show showtimes for any movie
+  // In production, check if movie is still in theaters
+  const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
+  const isMovieInTheaters = isShowcaseMode ? true : (() => {
     if (!movie.releaseDate) return true // If no release date, assume it's playing
     
     const releaseDate = new Date(movie.releaseDate)
@@ -231,7 +233,7 @@ export default async function MovieDetailPage({ params }: Props) {
     return releaseDate >= threeMonthsAgo
   })()
 
-  // Only generate and fetch showtimes if movie is still in theaters
+  // Generate and fetch showtimes
   let showtimes: any[] = []
   if (isMovieInTheaters) {
     // Generate showtimes if missing
@@ -249,6 +251,8 @@ export default async function MovieDetailPage({ params }: Props) {
         WHERE s.movieId = ? AND s.startTime >= NOW()
         ORDER BY t.name ASC, s.startTime ASC
       `, [movie.id])
+      
+      console.log(`[MovieDetailPage] Found ${showtimes.length} showtimes for movie ${movie.id}`)
     } catch (err) {
       console.error('Fetch showtimes failed:', err)
     }

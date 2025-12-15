@@ -56,11 +56,19 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
     return MOCK_MOVIES as T[]
   }
 
-  // Showtimes queries
-  if (lowerSql.includes('select') && lowerSql.includes('showtime')) {
+  // Showtimes queries (simple, without JOINs)
+  if (lowerSql.includes('select') && lowerSql.includes('showtime') && !lowerSql.includes('join')) {
     if (lowerSql.includes('where movieid =') || lowerSql.includes('where movieid=')) {
       const movieId = params?.[0]
-      const showtimes = MOCK_SHOWTIMES.filter(st => st.movieId === String(movieId))
+      let showtimes = MOCK_SHOWTIMES.filter(st => st.movieId === String(movieId))
+      
+      // Handle LIMIT clause
+      if (lowerSql.includes('limit')) {
+        const limitMatch = lowerSql.match(/limit\s+(\d+)/)
+        const limit = limitMatch ? parseInt(limitMatch[1]) : 1
+        showtimes = showtimes.slice(0, limit)
+      }
+      
       return showtimes.map(st => ({
         ...st,
         screenName: getTheaterByScreenId(st.screenId)?.screen.name || 'Screen 1',
@@ -121,8 +129,96 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
   }
 
   // Booking seats queries
-  if (lowerSql.includes('select') && lowerSql.includes('_bookingseats') || lowerSql.includes('bookingseats')) {
+  if (lowerSql.includes('select') && (lowerSql.includes('_bookingseats') || lowerSql.includes('bookingseats'))) {
     return [] as T[]
+  }
+
+  // Screen queries
+  if (lowerSql.includes('select') && lowerSql.includes('screen')) {
+    if (lowerSql.includes('where id =') || lowerSql.includes('where id=')) {
+      const screenId = params?.[0]
+      for (const theater of MOCK_THEATERS) {
+        const screen = theater.screens.find(s => s.id === String(screenId))
+        if (screen) {
+          return [{
+            id: screen.id,
+            name: screen.name,
+            theaterId: theater.id,
+          }] as T[]
+        }
+      }
+      return []
+    }
+    // Return all screens
+    const screens: any[] = []
+    for (const theater of MOCK_THEATERS) {
+      for (const screen of theater.screens) {
+        screens.push({
+          id: screen.id,
+          name: screen.name,
+          theaterId: theater.id,
+        })
+      }
+    }
+    return screens as T[]
+  }
+
+  // Theater queries
+  if (lowerSql.includes('select') && lowerSql.includes('theater')) {
+    if (lowerSql.includes('where id =') || lowerSql.includes('where id=')) {
+      const theaterId = params?.[0]
+      const theater = MOCK_THEATERS.find(t => t.id === String(theaterId))
+      return (theater ? [theater] : []) as T[]
+    }
+    return MOCK_THEATERS as T[]
+  }
+
+  // Showtimes with JOIN queries (Showtime JOIN Screen JOIN Theater)
+  if (lowerSql.includes('select') && lowerSql.includes('showtime') && (lowerSql.includes('join') || lowerSql.includes('screen') || lowerSql.includes('theater'))) {
+    const movieId = params?.[0]
+    let showtimes = movieId 
+      ? MOCK_SHOWTIMES.filter(st => st.movieId === String(movieId))
+      : MOCK_SHOWTIMES
+    
+    // Filter by startTime >= NOW() if present in query
+    if (lowerSql.includes('starttime') && lowerSql.includes('>=') && lowerSql.includes('now()')) {
+      const now = new Date()
+      showtimes = showtimes.filter(st => {
+        const startTime = new Date(st.startTime)
+        return startTime >= now
+      })
+    }
+
+    const results = showtimes.map(st => {
+      const theaterData = getTheaterByScreenId(st.screenId)
+      return {
+        id: st.id,
+        startTime: st.startTime,
+        price: st.price,
+        screenId: st.screenId,
+        screenName: theaterData?.screen.name || 'Screen 1',
+        theaterId: theaterData?.theater.id,
+        theaterName: theaterData?.theater.name || 'Theater',
+        theaterLocation: theaterData?.theater.location || 'Mumbai',
+        movieId: st.movieId,
+      }
+    })
+
+    // Sort by theater name and start time if ORDER BY is present
+    if (lowerSql.includes('order by')) {
+      results.sort((a: any, b: any) => {
+        if (lowerSql.includes('t.name')) {
+          const nameCompare = (a.theaterName || '').localeCompare(b.theaterName || '')
+          if (nameCompare !== 0) return nameCompare
+        }
+        if (lowerSql.includes('s.starttime')) {
+          return new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+        }
+        return 0
+      })
+    }
+
+    return results as T[]
   }
 
   return []
@@ -234,6 +330,33 @@ function mockExecute(sql: string, params?: any[]): any {
   if (lowerSql.includes('update') && lowerSql.includes('booking')) {
     // Handle booking updates
     return { affectedRows: 1 }
+  }
+
+  // Insert showtimes
+  if (lowerSql.includes('insert') && lowerSql.includes('showtime')) {
+    const showtimeId = params?.[0] || `showtime-${Date.now()}`
+    const movieId = params?.[1]
+    const screenId = params?.[2]
+    const startTime = params?.[3]
+    const price = params?.[4] || 50000
+
+    // Check if showtime already exists (for ON DUPLICATE KEY UPDATE)
+    if (lowerSql.includes('on duplicate key update')) {
+      const existing = MOCK_SHOWTIMES.find(st => st.id === showtimeId)
+      if (existing) {
+        return { insertId: showtimeId, affectedRows: 0 }
+      }
+    }
+
+    MOCK_SHOWTIMES.push({
+      id: showtimeId,
+      movieId: String(movieId),
+      screenId: String(screenId),
+      startTime: String(startTime),
+      price: Number(price),
+    })
+
+    return { insertId: showtimeId, affectedRows: 1 }
   }
 
   return { affectedRows: 0 }
