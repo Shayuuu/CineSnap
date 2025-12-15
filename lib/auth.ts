@@ -99,9 +99,7 @@ export const authOptions: NextAuthOptions = {
             (dbUser.password && dbUser.password === credentials.password) ||
             (dbUser.passwordHash && dbUser.passwordHash === credentials.password)
           
-          // In showcase mode (no DB_HOST), allow any password for demo purposes
-          const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
-          
+          // Reuse isShowcaseMode from above (line 37)
           if (!passwordMatch && !isShowcaseMode) {
             console.error('[NextAuth] Password mismatch')
             return null
