@@ -120,7 +120,7 @@ export default function MovieDetailClient({ movie, showtimes, recommendations = 
             ) : (
               <div className="w-full h-full bg-white/5 flex items-center justify-center border border-white/10">
                 <span className="text-6xl font-clash font-bold text-white/30">
-                  {movie.title.charAt(0)}
+                  {movie.title?.charAt(0) || 'M'}
                 </span>
               </div>
             )}

@@ -382,7 +382,7 @@ export default function ReviewSection({ movieId }: Props) {
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                       <span className="text-white/70 font-clash font-semibold text-sm">
-                        {review.userName?.charAt(0).toUpperCase() || review.userEmail.charAt(0).toUpperCase()}
+                        {review.userName?.charAt(0)?.toUpperCase() || review.userEmail?.charAt(0)?.toUpperCase() || 'U'}
                       </span>
                     </div>
                     <div>

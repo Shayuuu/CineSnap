@@ -126,7 +126,7 @@ export default function WishlistPage() {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <span className="text-6xl font-clash font-bold text-white/30">
-                          {item.movieTitle.charAt(0)}
+                          {item.movieTitle?.charAt(0) || 'M'}
                         </span>
                       </div>
                     )}

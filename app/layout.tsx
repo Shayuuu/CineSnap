@@ -12,6 +12,8 @@ import Footer from '@/components/Footer'
 export const metadata: Metadata = {
   title: 'CineSnap - Premium Movie Booking Experience',
   description: 'Book your movie tickets with real-time seat locking. Premium cinema-grade experience.',
+  manifest: '/manifest.json',
+  themeColor: '#0a0a0a',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -25,8 +27,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <CustomCursor />
           <MovieThemeDecorations />
-          <link rel="manifest" href="/manifest.json" />
-          <meta name="theme-color" content="#0a0a0a" />
           <div className="relative z-10">
             <header className="fixed top-0 left-0 right-0 z-50 glass-strong border-b border-white/10 backdrop-blur-xl">
               <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4 flex items-center justify-between gap-4">

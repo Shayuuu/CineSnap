@@ -79,7 +79,7 @@ export default function MoviesGrid({ movies }: Props) {
                     ) : (
                       <div className="absolute inset-0 flex items-center justify-center">
                         <span className="text-4xl font-clash font-bold text-white/30">
-                          {movie.title.charAt(0)}
+                          {movie.title?.charAt(0) || 'M'}
                         </span>
                       </div>
                     )}
