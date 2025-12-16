@@ -59,14 +59,72 @@ function generateShowtimeFromId(showtimeId: string) {
 export default async function TicketPage({ params }: Props) {
   const { id } = await params
   
+  console.log('[TicketPage] Looking for booking:', id)
+  
   // Get booking from database (works with both real and mock)
   const booking = await queryOne<any>(
     'SELECT * FROM Booking WHERE id = ?',
     [id]
   )
   
+  console.log('[TicketPage] Booking query result:', booking ? 'found' : 'not found', 'ID:', id)
+  
   if (!booking) {
     console.error('[TicketPage] Booking not found:', id)
+    // In showcase mode, return a demo ticket with the booking ID
+    const { IS_SHOWCASE_MODE } = await import('@/lib/mockDb')
+    if (IS_SHOWCASE_MODE) {
+      console.log('[TicketPage] Showcase mode: Creating demo ticket for booking:', id)
+      // Create a demo booking for showcase
+      const demoBooking = {
+        id,
+        showtimeId: 'showtime-550-0-0', // Default showtime
+        userId: 'demo-user',
+        status: 'CONFIRMED',
+        totalAmount: 50000,
+        createdAt: new Date().toISOString(),
+      }
+      
+      const demoShowtime = generateShowtimeFromId(demoBooking.showtimeId) || {
+        id: demoBooking.showtimeId,
+        movieId: '550',
+        screenId: 'screen-1',
+        startTime: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
+        price: 50000,
+      }
+      
+      const demoTheaterData = getTheaterByScreenId(demoShowtime.screenId) || {
+        theater: { id: 'theater-1', name: 'PVR Cinemas', location: 'Mumbai' },
+        screen: { id: 'screen-1', name: 'Screen 1', seats: [] },
+      }
+      
+      // Fetch movie
+      let movie: any = null
+      try {
+        const apiKey = getTmdbApiKey()
+        if (apiKey) {
+          const movieRes = await fetch(
+            `https://api.themoviedb.org/3/movie/${demoShowtime.movieId}?api_key=${apiKey}&language=en-IN`,
+            { cache: 'no-store' }
+          )
+          if (movieRes.ok) {
+            const m = await movieRes.json()
+            movie = {
+              id: String(m.id),
+              title: m.title,
+              posterUrl: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[TicketPage] Failed to fetch movie:', err)
+      }
+      
+      if (movie) {
+        return renderTicket(id, demoBooking, demoShowtime, demoTheaterData, movie, ['A5', 'A6'])
+      }
+    }
+    
     return notFound()
   }
 
@@ -171,6 +229,32 @@ export default async function TicketPage({ params }: Props) {
     }
   }
 
+  return renderTicket(id, booking, showtime, theaterData, movie, seats)
+}
+
+function renderTicket(
+  id: string,
+  booking: any,
+  showtime: any,
+  theaterData: any,
+  movie?: any,
+  seats?: string[]
+) {
+  // Fetch movie if not provided
+  if (!movie && showtime.movieId) {
+    // This will be handled by the caller
+    return null
+  }
+  
+  if (!movie) {
+    return notFound()
+  }
+  
+  // Get seats if not provided
+  if (!seats) {
+    seats = []
+  }
+  
   return (
     <TicketClient
       bookingId={id}

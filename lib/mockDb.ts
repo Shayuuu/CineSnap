@@ -216,6 +216,10 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
     if (lowerSql.includes('where id =') || lowerSql.includes('where id=')) {
       const bookingId = params?.[0]
       const booking = MOCK_BOOKINGS.find(b => b.id === String(bookingId))
+      console.log('[mockDb] Query booking by ID:', bookingId, 'found:', !!booking, 'total bookings:', MOCK_BOOKINGS.length)
+      if (booking) {
+        console.log('[mockDb] Booking details:', { id: booking.id, showtimeId: booking.showtimeId, userId: booking.userId })
+      }
       return (booking ? [booking] : []) as T[]
     }
     if (lowerSql.includes('where userid =') || lowerSql.includes('where userid=')) {
@@ -223,6 +227,7 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
       const bookings = MOCK_BOOKINGS.filter(b => b.userId === String(userId))
       return bookings as T[]
     }
+    console.log('[mockDb] Query all bookings, total:', MOCK_BOOKINGS.length)
     return MOCK_BOOKINGS as T[]
   }
 
@@ -477,10 +482,15 @@ function mockExecute(sql: string, params?: any[]): any {
     const showtimeId = params?.[2]
     const totalAmount = params?.[3] || 0
     
-    const showtime = MOCK_SHOWTIMES.find(st => st.id === showtimeId)
+    // Try to get showtime - first from MOCK_SHOWTIMES, then generate dynamically
+    let showtime = MOCK_SHOWTIMES.find(st => st.id === showtimeId)
+    if (!showtime && showtimeId && showtimeId.startsWith('showtime-')) {
+      showtime = generateShowtimeFromId(showtimeId) as any
+    }
+    
     const theaterData = showtime ? getTheaterByScreenId(showtime.screenId) : null
     
-    MOCK_BOOKINGS.push({
+    const booking = {
       id: bookingId,
       showtimeId,
       userId,
@@ -493,7 +503,11 @@ function mockExecute(sql: string, params?: any[]): any {
       startTime: showtime?.startTime || new Date().toISOString(),
       seats: [],
       posterUrl: MOCK_MOVIES.find(m => m.id === showtime?.movieId)?.posterUrl || null,
-    })
+      movieId: showtime?.movieId || 'unknown',
+    }
+    
+    MOCK_BOOKINGS.push(booking)
+    console.log('[mockDb] Created booking:', bookingId, 'showtimeId:', showtimeId, 'total bookings:', MOCK_BOOKINGS.length)
     
     return { insertId: bookingId, affectedRows: 1 }
   }
@@ -504,6 +518,9 @@ function mockExecute(sql: string, params?: any[]): any {
     const bookingId = params?.[0]
     const seatId = params?.[1]
     const booking = MOCK_BOOKINGS.find(b => b.id === bookingId)
+    
+    console.log('[mockDb] Inserting booking seat:', { bookingId, seatId, bookingFound: !!booking, totalBookings: MOCK_BOOKINGS.length })
+    
     if (booking && seatId) {
       if (!booking.seats) booking.seats = []
       // Format seat ID properly
@@ -518,7 +535,10 @@ function mockExecute(sql: string, params?: any[]): any {
       }
       if (!MOCK_BOOKING_SEATS[bookingId].includes(seatStr)) {
         MOCK_BOOKING_SEATS[bookingId].push(seatStr)
+        console.log('[mockDb] Added seat to MOCK_BOOKING_SEATS:', bookingId, 'seats:', MOCK_BOOKING_SEATS[bookingId])
       }
+    } else {
+      console.error('[mockDb] Booking not found for seat insertion:', bookingId, 'Available bookings:', MOCK_BOOKINGS.map(b => b.id))
     }
     return { affectedRows: 1 }
   }
