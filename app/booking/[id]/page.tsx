@@ -100,6 +100,9 @@ export default async function BookingPage({ params }: Props) {
   const locked: string[] = []
   const booked: string[] = []
 
+  // Check if we're in showcase mode
+  const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
+
   return (
     <BookingClient
       seats={seats}
@@ -111,6 +114,7 @@ export default async function BookingPage({ params }: Props) {
       screenName={showtime.screenName}
       showtime={formatDateTime(showtime.startTime)}
       pricePerSeat={showtime.price / 100}
+      isShowcaseMode={isShowcaseMode}
     />
   )
 }
