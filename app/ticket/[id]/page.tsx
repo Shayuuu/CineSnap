@@ -2,29 +2,109 @@ import { notFound } from 'next/navigation'
 import TicketClient from '@/components/TicketClient'
 import { MOCK_BOOKINGS, MOCK_BOOKING_SEATS, MOCK_SHOWTIMES, MOCK_THEATERS, getTheaterByScreenId } from '@/lib/mockData'
 import { getTmdbApiKey } from '@/lib/config'
+import { queryOne, query } from '@/lib/db'
 
 type Props = { params: Promise<{ id: string }> }
+
+// Helper function to generate showtime from ID (same as in mockDb)
+function generateShowtimeFromId(showtimeId: string) {
+  // Format: showtime-{movieId}-{screenIndex}-{slotIndex}
+  const parts = showtimeId.split('-')
+  if (parts.length < 4 || parts[0] !== 'showtime') return null
+  
+  const movieId = parts[1]
+  const screenIndex = parseInt(parts[2])
+  const slotIndex = parseInt(parts[3])
+  
+  const slots = ['10:00', '13:00', '16:00', '19:00', '22:00']
+  const allScreens: Array<{ id: string; name: string; theaterId: string }> = []
+  MOCK_THEATERS.forEach(theater => {
+    theater.screens.forEach(screen => {
+      allScreens.push({
+        id: screen.id,
+        name: screen.name,
+        theaterId: theater.id,
+      })
+    })
+  })
+  
+  if (screenIndex >= allScreens.length || slotIndex >= slots.length) {
+    return null
+  }
+  
+  const screen = allScreens[screenIndex]
+  const slot = slots[slotIndex]
+  const [hours, minutes] = slot.split(':').map(Number)
+  const startTimeDate = new Date()
+  startTimeDate.setHours(hours, minutes, 0, 0)
+  if (startTimeDate < new Date()) {
+    startTimeDate.setDate(startTimeDate.getDate() + 1)
+  }
+  
+  const theaterData = getTheaterByScreenId(screen.id)
+  
+  return {
+    id: showtimeId,
+    movieId,
+    screenId: screen.id,
+    startTime: startTimeDate.toISOString(),
+    price: 45000 + Math.floor(Math.random() * 15000),
+    screenName: screen.name,
+    theaterId: theaterData?.theater.id || MOCK_THEATERS[0].id,
+    theaterName: theaterData?.theater.name || MOCK_THEATERS[0].name,
+    theaterLocation: theaterData?.theater.location || MOCK_THEATERS[0].location,
+  }
+}
 
 export default async function TicketPage({ params }: Props) {
   const { id } = await params
   
-  // Get booking from mock data
-  const booking = MOCK_BOOKINGS.find(b => b.id === id)
+  // Get booking from database (works with both real and mock)
+  const booking = await queryOne<any>(
+    'SELECT * FROM Booking WHERE id = ?',
+    [id]
+  )
   
   if (!booking) {
     console.error('[TicketPage] Booking not found:', id)
     return notFound()
   }
 
-  // Get showtime from mock data
-  const showtime = MOCK_SHOWTIMES.find(st => st.id === booking.showtimeId)
+  // Get showtime - try database query first (works with mock too)
+  let showtime = await queryOne<any>(
+    'SELECT * FROM Showtime WHERE id = ?',
+    [booking.showtimeId]
+  )
+  
+  // If not found, try to generate from ID format
+  if (!showtime && booking.showtimeId && booking.showtimeId.startsWith('showtime-')) {
+    showtime = generateShowtimeFromId(booking.showtimeId)
+  }
+  
   if (!showtime) {
     console.error('[TicketPage] Showtime not found:', booking.showtimeId)
     return notFound()
   }
 
   // Get theater and screen info
-  const theaterData = getTheaterByScreenId(showtime.screenId)
+  let theaterData = getTheaterByScreenId(showtime.screenId)
+  
+  // If theater data not found, use data from showtime if available
+  if (!theaterData && (showtime as any).theaterName) {
+    theaterData = {
+      theater: {
+        id: (showtime as any).theaterId || 'theater-1',
+        name: (showtime as any).theaterName || 'PVR Cinemas',
+        location: (showtime as any).theaterLocation || 'Mumbai',
+      },
+      screen: {
+        id: showtime.screenId,
+        name: (showtime as any).screenName || 'Screen 1',
+        seats: [],
+      },
+    }
+  }
+  
   if (!theaterData) {
     console.error('[TicketPage] Theater not found for screen:', showtime.screenId)
     return notFound()
@@ -57,17 +137,37 @@ export default async function TicketPage({ params }: Props) {
     return notFound()
   }
 
-  // Get booked seats from mock data
-  const seatIds = MOCK_BOOKING_SEATS[id] || []
-  const seats: string[] = []
+  // Get booked seats - try database query first, then fallback to mock data
+  let seats: string[] = []
   
-  // Parse seat IDs to get row and number (format: screen-1-A-5)
-  for (const seatId of seatIds) {
-    const parts = seatId.split('-')
-    if (parts.length >= 4) {
-      const row = parts[parts.length - 2]
-      const number = parts[parts.length - 1]
-      seats.push(`${row}${number}`)
+  try {
+    // Try to get seats from database (works with mock too)
+    const bookingSeats = await query<any>(
+      `SELECT s.* FROM Seat s
+       INNER JOIN _BookingSeats bs ON s.id = bs.B
+       WHERE bs.A = ?`,
+      [id]
+    )
+    
+    if (bookingSeats && Array.isArray(bookingSeats) && bookingSeats.length > 0) {
+      seats = bookingSeats.map((s: any) => `${s.row}${s.number}`)
+    }
+  } catch (err) {
+    console.error('[TicketPage] Failed to query seats, trying mock data:', err)
+  }
+  
+  // Fallback to mock data if database query failed
+  if (seats.length === 0) {
+    const seatIds = MOCK_BOOKING_SEATS[id] || []
+    
+    // Parse seat IDs to get row and number (format: screen-1-A-5)
+    for (const seatId of seatIds) {
+      const parts = seatId.split('-')
+      if (parts.length >= 4) {
+        const row = parts[parts.length - 2]
+        const number = parts[parts.length - 1]
+        seats.push(`${row}${number}`)
+      }
     }
   }
 

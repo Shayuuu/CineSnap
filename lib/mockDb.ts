@@ -160,10 +160,54 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
 
   // Seats queries
   if (lowerSql.includes('select') && lowerSql.includes('seat')) {
+    // JOIN query: SELECT s.* FROM Seat s INNER JOIN _BookingSeats bs ON s.id = bs.B WHERE bs.A = ?
+    if (lowerSql.includes('join') && (lowerSql.includes('_bookingseats') || lowerSql.includes('bookingseats')) && lowerSql.includes('where')) {
+      const bookingId = params?.[0]
+      const seatIds = MOCK_BOOKING_SEATS[String(bookingId)] || []
+      const seats: any[] = []
+      
+      // Get all seats from all theaters
+      for (const theater of MOCK_THEATERS) {
+        for (const screen of theater.screens) {
+          for (const seat of screen.seats) {
+            if (seatIds.includes(seat.id)) {
+              seats.push(seat)
+            }
+          }
+        }
+      }
+      
+      return seats as T[]
+    }
+    
     if (lowerSql.includes('where screenid =') || lowerSql.includes('where screenid=')) {
       const screenId = params?.[0]
       return getSeatsForScreen(String(screenId)) as T[]
     }
+    
+    // SELECT CONCAT(`row`, `number`) as seat FROM Seat WHERE id IN (...)
+    if (lowerSql.includes('concat') && lowerSql.includes('where id in')) {
+      const seatIds = params || []
+      const seats: any[] = []
+      
+      // Get all seats from all theaters
+      for (const theater of MOCK_THEATERS) {
+        for (const screen of theater.screens) {
+          for (const seat of screen.seats) {
+            if (seatIds.includes(seat.id)) {
+              seats.push({
+                seat: `${seat.row}${seat.number}`,
+                row: seat.row,
+                number: seat.number,
+              })
+            }
+          }
+        }
+      }
+      
+      return seats as T[]
+    }
+    
     return []
   }
 
