@@ -23,6 +23,7 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
   const [cart, setCart] = useState<Record<string, number>>({})
   const [loading, setLoading] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     fetchFoodItems()
@@ -30,16 +31,31 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
 
   const fetchFoodItems = async () => {
     try {
+      setError(null)
+      setLoading(true)
       const url = selectedCategory
         ? `/api/food?category=${selectedCategory}`
         : '/api/food'
       const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
-        setItems(data.items || [])
+        if (data.error) {
+          setError(data.error)
+          setItems([])
+        } else {
+          setItems(data.items || [])
+        }
+      } else {
+        const errorData = await res.json().catch(() => ({ error: 'Failed to fetch food items' }))
+        setError(errorData.error || 'Failed to fetch food items')
+        setItems([])
       }
     } catch (err) {
       console.error('Failed to fetch food items:', err)
+      setError('Failed to load food items')
+      setItems([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -117,7 +133,29 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
         ))}
       </div>
 
+      {/* Error Message */}
+      {error && (
+        <div className="glass-strong rounded-xl p-4 border border-red-500/50">
+          <p className="text-red-400 text-center">{error}</p>
+        </div>
+      )}
+
+      {/* Loading State */}
+      {loading && (
+        <div className="glass-strong rounded-xl p-8 text-center">
+          <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-gray-400">Loading food items...</p>
+        </div>
+      )}
+
       {/* Food Items */}
+      {!loading && !error && items.length === 0 && (
+        <div className="glass-strong rounded-xl p-8 text-center">
+          <p className="text-gray-400">No food items available</p>
+        </div>
+      )}
+
+      {!loading && !error && items.length > 0 && (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((item) => (
           <motion.div
@@ -171,6 +209,7 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
           </motion.div>
         ))}
       </div>
+      )}
 
       {/* Cart Summary */}
       {getCartCount() > 0 && (

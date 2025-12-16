@@ -196,6 +196,118 @@ export const MOCK_USERS = [
 // Store bookings with seat associations
 export const MOCK_BOOKING_SEATS: Record<string, string[]> = {}
 
+// Mock food items for showcase mode
+export const MOCK_FOOD_ITEMS = [
+  {
+    id: 'food-1',
+    name: 'Large Popcorn',
+    description: 'Freshly popped, buttery popcorn',
+    price: 20000, // ₹200
+    category: 'POPCORN',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-2',
+    name: 'Medium Popcorn',
+    description: 'Perfect size for sharing',
+    price: 15000, // ₹150
+    category: 'POPCORN',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-3',
+    name: 'Small Popcorn',
+    description: 'Just right for one',
+    price: 10000, // ₹100
+    category: 'POPCORN',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-4',
+    name: 'Coca Cola',
+    description: '500ml chilled soft drink',
+    price: 8000, // ₹80
+    category: 'DRINKS',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-5',
+    name: 'Pepsi',
+    description: '500ml chilled soft drink',
+    price: 8000, // ₹80
+    category: 'DRINKS',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-6',
+    name: 'Mineral Water',
+    description: '500ml bottled water',
+    price: 5000, // ₹50
+    category: 'DRINKS',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-7',
+    name: 'Nachos with Cheese',
+    description: 'Crispy nachos with melted cheese',
+    price: 18000, // ₹180
+    category: 'SNACKS',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-8',
+    name: 'Chocolate Bar',
+    description: 'Premium chocolate bar',
+    price: 12000, // ₹120
+    category: 'SNACKS',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-9',
+    name: 'Hot Dog',
+    description: 'Classic cinema hot dog',
+    price: 15000, // ₹150
+    category: 'SNACKS',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-10',
+    name: 'Combo 1',
+    description: 'Large Popcorn + 2 Drinks',
+    price: 35000, // ₹350
+    category: 'COMBO',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-11',
+    name: 'Combo 2',
+    description: 'Medium Popcorn + 1 Drink + Nachos',
+    price: 40000, // ₹400
+    category: 'COMBO',
+    imageUrl: null,
+    available: true,
+  },
+  {
+    id: 'food-12',
+    name: 'Combo 3',
+    description: 'Large Popcorn + 2 Drinks + Chocolate',
+    price: 42000, // ₹420
+    category: 'COMBO',
+    imageUrl: null,
+    available: true,
+  },
+]
+
 // Mock groups for group booking feature
 export const MOCK_GROUPS: Array<{
   id: string
