@@ -6,6 +6,8 @@ import {
   MOCK_SHOWTIMES,
   MOCK_BOOKINGS,
   MOCK_USERS,
+  MOCK_GROUPS,
+  MOCK_GROUP_MEMBERS,
   getTheaterByScreenId,
   getShowtimesForMovie,
   getSeatsForScreen,
@@ -171,6 +173,73 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
       return (theater ? [theater] : []) as T[]
     }
     return MOCK_THEATERS as T[]
+  }
+
+  // Group queries (BookingGroup)
+  if (lowerSql.includes('select') && (lowerSql.includes('bookinggroup') || lowerSql.includes('group'))) {
+    if (lowerSql.includes('where g.id =') || lowerSql.includes('where g.id=') || (lowerSql.includes('where') && lowerSql.includes('id =') && params?.[0])) {
+      const groupId = params?.[0]
+      const group = MOCK_GROUPS.find(g => g.id === String(groupId))
+      if (!group) return []
+      
+      // If JOIN with User, add creator info
+      if (lowerSql.includes('join') && lowerSql.includes('user')) {
+        const creator = MOCK_USERS.find(u => u.id === group.createdBy)
+        return [{
+          ...group,
+          creatorName: creator?.name || 'Unknown',
+          creatorEmail: creator?.email || '',
+        }] as T[]
+      }
+      
+      return [group] as T[]
+    }
+    
+    if (lowerSql.includes('where g.showtimeid =') || lowerSql.includes('where g.showtimeid=') || (lowerSql.includes('showtimeid') && params?.[0])) {
+      const showtimeId = params?.[0]
+      let groups = MOCK_GROUPS.filter(g => g.showtimeId === String(showtimeId) && g.status === 'ACTIVE')
+      
+      // If JOIN with User, add creator info and member count
+      if (lowerSql.includes('join') && lowerSql.includes('user')) {
+        groups = groups.map(group => {
+          const creator = MOCK_USERS.find(u => u.id === group.createdBy)
+          const memberCount = MOCK_GROUP_MEMBERS.filter(m => m.groupId === group.id).length
+          return {
+            ...group,
+            creatorName: creator?.name || 'Unknown',
+            memberCount,
+          }
+        })
+      }
+      
+      return groups as T[]
+    }
+    
+    return MOCK_GROUPS as T[]
+  }
+
+  // Group member queries (GroupMember)
+  if (lowerSql.includes('select') && lowerSql.includes('groupmember')) {
+    if (lowerSql.includes('where m.groupid =') || lowerSql.includes('where m.groupid=') || (lowerSql.includes('groupid') && params?.[0])) {
+      const groupId = params?.[0]
+      let members = MOCK_GROUP_MEMBERS.filter(m => m.groupId === String(groupId))
+      
+      // If JOIN with User, add user info
+      if (lowerSql.includes('join') && lowerSql.includes('user')) {
+        members = members.map(member => {
+          const user = MOCK_USERS.find(u => u.id === member.userId)
+          return {
+            ...member,
+            userName: user?.name || 'Unknown',
+            userEmail: user?.email || '',
+          }
+        })
+      }
+      
+      return members as T[]
+    }
+    
+    return MOCK_GROUP_MEMBERS as T[]
   }
 
   // Showtimes with JOIN queries (Showtime JOIN Screen JOIN Theater)
@@ -433,6 +502,43 @@ function mockExecute(sql: string, params?: any[]): any {
     console.log('[mockDb] Total showtimes now:', MOCK_SHOWTIMES.length)
 
     return { insertId: showtimeId, affectedRows: 1 }
+  }
+
+  // Insert groups (BookingGroup)
+  if (lowerSql.includes('insert') && lowerSql.includes('bookinggroup')) {
+    const groupId = params?.[0]
+    const name = params?.[1]
+    const createdBy = params?.[2]
+    const showtimeId = params?.[3]
+    const joinToken = params?.[4] || null
+    
+    MOCK_GROUPS.push({
+      id: groupId,
+      name,
+      createdBy,
+      showtimeId,
+      joinToken,
+      status: 'ACTIVE',
+      createdAt: new Date().toISOString(),
+    })
+    
+    return { insertId: groupId, affectedRows: 1 }
+  }
+
+  // Insert group members (GroupMember)
+  if (lowerSql.includes('insert') && lowerSql.includes('groupmember')) {
+    const memberId = params?.[0]
+    const groupId = params?.[1]
+    const userId = params?.[2]
+    
+    MOCK_GROUP_MEMBERS.push({
+      id: memberId,
+      groupId,
+      userId,
+      joinedAt: new Date().toISOString(),
+    })
+    
+    return { insertId: memberId, affectedRows: 1 }
   }
 
   return { affectedRows: 0 }

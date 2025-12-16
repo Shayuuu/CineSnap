@@ -101,22 +101,34 @@ export async function GET(req: NextRequest) {
 // POST - Create a new group
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session || !session.user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { IS_SHOWCASE_MODE } = await import('@/lib/mockDb')
+    
+    // Parse request body first
+    const body = await req.json()
+    const { name, showtimeId, userId: bodyUserId } = body
+    
+    // In showcase mode, allow requests without authentication
+    let userId: string | null = null
+    
+    if (!IS_SHOWCASE_MODE) {
+      const session = await getServerSession(authOptions)
+      if (!session || !session.user) {
+        return Response.json({ error: 'Unauthorized' }, { status: 401 })
+      }
 
-    let userId = (session.user as any)?.id
-    if (!userId && session.user?.email) {
-      const dbUser = await queryOne<any>('SELECT id FROM User WHERE email = ?', [session.user.email])
-      if (dbUser) userId = dbUser.id
-    }
+      userId = (session.user as any)?.id
+      if (!userId && session.user?.email) {
+        const dbUser = await queryOne<any>('SELECT id FROM User WHERE email = ?', [session.user.email])
+        if (dbUser) userId = dbUser.id
+      }
 
-    if (!userId) {
-      return Response.json({ error: 'User ID not found' }, { status: 401 })
+      if (!userId) {
+        return Response.json({ error: 'User ID not found' }, { status: 401 })
+      }
+    } else {
+      // In showcase mode, use demo user or get from request body
+      userId = bodyUserId || 'demo-user'
     }
-
-    const { name, showtimeId } = await req.json()
 
     if (!name || !showtimeId) {
       return Response.json({ error: 'name and showtimeId are required' }, { status: 400 })

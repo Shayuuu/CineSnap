@@ -196,6 +196,24 @@ export const MOCK_USERS = [
 // Store bookings with seat associations
 export const MOCK_BOOKING_SEATS: Record<string, string[]> = {}
 
+// Mock groups for group booking feature
+export const MOCK_GROUPS: Array<{
+  id: string
+  name: string
+  createdBy: string
+  showtimeId: string
+  joinToken: string | null
+  status: 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
+  createdAt: string
+}> = []
+
+export const MOCK_GROUP_MEMBERS: Array<{
+  id: string
+  groupId: string
+  userId: string
+  joinedAt: string
+}> = []
+
 // Helper to get theater by screen ID
 export function getTheaterByScreenId(screenId: string | number | undefined | null) {
   if (!screenId) return null
