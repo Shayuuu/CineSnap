@@ -44,73 +44,94 @@ export async function POST(req: NextRequest) {
     )
 
     const bookingId = randomBytes(16).toString('hex')
-    const connection = await getConnection()
-
-    try {
-      await connection.beginTransaction()
-
-      // Create booking (CONFIRMED in dev / mock order)
-      await connection.execute(
+    
+    // In showcase mode, use execute directly instead of transactions
+    const { IS_SHOWCASE_MODE } = await import('@/lib/mockDb')
+    
+    if (IS_SHOWCASE_MODE) {
+      // Create booking directly (no transaction needed in showcase mode)
+      await execute(
         'INSERT INTO Booking (id, userId, showtimeId, totalAmount, razorpayOrderId, loyaltyPointsEarned, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
         [bookingId, userId, showtimeId, total, orderId, loyaltyPointsEarned, 'CONFIRMED']
       )
 
-      // Award loyalty points
-      if (loyaltyPointsEarned > 0) {
-        // Get or create loyalty record
-        const [loyaltyRows] = await connection.execute(
-          'SELECT * FROM LoyaltyPoints WHERE userId = ?',
-          [userId]
-        )
-        const loyalty = (loyaltyRows as any[])[0]
-
-        if (!loyalty) {
-          const loyaltyId = randomBytes(16).toString('hex')
-          await connection.execute(
-            'INSERT INTO LoyaltyPoints (id, userId, points, totalEarned, tier) VALUES (?, ?, ?, ?, ?)',
-            [loyaltyId, userId, loyaltyPointsEarned, loyaltyPointsEarned, 'BRONZE']
-          )
-        } else {
-          const newTotal = loyalty.totalEarned + loyaltyPointsEarned
-          const newPoints = loyalty.points + loyaltyPointsEarned
-          
-          // Calculate tier
-          const tier = newTotal >= 10000
-            ? 'PLATINUM'
-            : newTotal >= 5000
-            ? 'GOLD'
-            : newTotal >= 2000
-            ? 'SILVER'
-            : 'BRONZE'
-
-          await connection.execute(
-            'UPDATE LoyaltyPoints SET points = ?, totalEarned = ?, tier = ? WHERE userId = ?',
-            [newPoints, newTotal, tier, userId]
-          )
-
-          // Add to history
-          const historyId = randomBytes(16).toString('hex')
-          await connection.execute(
-            'INSERT INTO LoyaltyPointsHistory (id, userId, points, type, description, bookingId) VALUES (?, ?, ?, ?, ?, ?)',
-            [historyId, userId, loyaltyPointsEarned, 'EARNED', `Earned from booking ${bookingId.slice(0, 8)}`, bookingId]
-          )
-        }
-      }
-
       // Link seats to booking
       for (const seatId of seatIds) {
-        await connection.execute(
+        await execute(
           'INSERT INTO _BookingSeats (A, B) VALUES (?, ?)',
           [bookingId, seatId]
         )
       }
+    } else {
+      // Production mode: use transactions
+      const connection = await getConnection()
 
-      await connection.commit()
-    } catch (error) {
-      await connection.rollback()
-      throw error
-    } finally {
-      connection.release()
+      try {
+        await connection.beginTransaction()
+
+        // Create booking (CONFIRMED in dev / mock order)
+        await connection.execute(
+          'INSERT INTO Booking (id, userId, showtimeId, totalAmount, razorpayOrderId, loyaltyPointsEarned, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+          [bookingId, userId, showtimeId, total, orderId, loyaltyPointsEarned, 'CONFIRMED']
+        )
+
+        // Award loyalty points
+        if (loyaltyPointsEarned > 0) {
+          // Get or create loyalty record
+          const [loyaltyRows] = await connection.execute(
+            'SELECT * FROM LoyaltyPoints WHERE userId = ?',
+            [userId]
+          )
+          const loyalty = (loyaltyRows as any[])[0]
+
+          if (!loyalty) {
+            const loyaltyId = randomBytes(16).toString('hex')
+            await connection.execute(
+              'INSERT INTO LoyaltyPoints (id, userId, points, totalEarned, tier) VALUES (?, ?, ?, ?, ?)',
+              [loyaltyId, userId, loyaltyPointsEarned, loyaltyPointsEarned, 'BRONZE']
+            )
+          } else {
+            const newTotal = loyalty.totalEarned + loyaltyPointsEarned
+            const newPoints = loyalty.points + loyaltyPointsEarned
+            
+            // Calculate tier
+            const tier = newTotal >= 10000
+              ? 'PLATINUM'
+              : newTotal >= 5000
+              ? 'GOLD'
+              : newTotal >= 2000
+              ? 'SILVER'
+              : 'BRONZE'
+
+            await connection.execute(
+              'UPDATE LoyaltyPoints SET points = ?, totalEarned = ?, tier = ? WHERE userId = ?',
+              [newPoints, newTotal, tier, userId]
+            )
+
+            // Add to history
+            const historyId = randomBytes(16).toString('hex')
+            await connection.execute(
+              'INSERT INTO LoyaltyPointsHistory (id, userId, points, type, description, bookingId) VALUES (?, ?, ?, ?, ?, ?)',
+              [historyId, userId, loyaltyPointsEarned, 'EARNED', `Earned from booking ${bookingId.slice(0, 8)}`, bookingId]
+            )
+          }
+        }
+
+        // Link seats to booking
+        for (const seatId of seatIds) {
+          await connection.execute(
+            'INSERT INTO _BookingSeats (A, B) VALUES (?, ?)',
+            [bookingId, seatId]
+          )
+        }
+
+        await connection.commit()
+      } catch (error) {
+        await connection.rollback()
+        throw error
+      } finally {
+        connection.release()
+      }
     }
 
     // Send confirmation email (async, don't wait)

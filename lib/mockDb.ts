@@ -59,6 +59,56 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
     return MOCK_MOVIES as T[]
   }
 
+  // Helper function to generate showtime from ID
+  function generateShowtimeFromId(showtimeId: string) {
+    // Format: showtime-{movieId}-{screenIndex}-{slotIndex}
+    const parts = showtimeId.split('-')
+    if (parts.length < 4 || parts[0] !== 'showtime') return null
+    
+    const movieId = parts[1]
+    const screenIndex = parseInt(parts[2])
+    const slotIndex = parseInt(parts[3])
+    
+    const slots = ['10:00', '13:00', '16:00', '19:00', '22:00']
+    const allScreens: Array<{ id: string; name: string; theaterId: string }> = []
+    MOCK_THEATERS.forEach(theater => {
+      theater.screens.forEach(screen => {
+        allScreens.push({
+          id: screen.id,
+          name: screen.name,
+          theaterId: theater.id,
+        })
+      })
+    })
+    
+    if (screenIndex >= allScreens.length || slotIndex >= slots.length) {
+      return null
+    }
+    
+    const screen = allScreens[screenIndex]
+    const slot = slots[slotIndex]
+    const [hours, minutes] = slot.split(':').map(Number)
+    const startTimeDate = new Date()
+    startTimeDate.setHours(hours, minutes, 0, 0)
+    if (startTimeDate < new Date()) {
+      startTimeDate.setDate(startTimeDate.getDate() + 1)
+    }
+    
+    const theaterData = getTheaterByScreenId(screen.id)
+    
+    return {
+      id: showtimeId,
+      movieId,
+      screenId: screen.id,
+      startTime: startTimeDate.toISOString(),
+      price: 45000 + Math.floor(Math.random() * 15000), // ₹450-₹600
+      screenName: screen.name,
+      theaterId: theaterData?.theater.id || MOCK_THEATERS[0].id,
+      theaterName: theaterData?.theater.name || MOCK_THEATERS[0].name,
+      theaterLocation: theaterData?.theater.location || MOCK_THEATERS[0].location,
+    }
+  }
+
   // Showtimes queries (simple, without JOINs)
   if (lowerSql.includes('select') && lowerSql.includes('showtime') && !lowerSql.includes('join')) {
     if (lowerSql.includes('where movieid =') || lowerSql.includes('where movieid=')) {
@@ -81,8 +131,19 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
       })) as T[]
     }
     if (lowerSql.includes('where id =') || lowerSql.includes('where id=')) {
-      const showtimeId = params?.[0]
-      const showtime = MOCK_SHOWTIMES.find(st => st.id === String(showtimeId))
+      const showtimeId = String(params?.[0] || '')
+      
+      // First try to find in MOCK_SHOWTIMES
+      let showtime = MOCK_SHOWTIMES.find(st => st.id === showtimeId)
+      
+      // If not found, try to generate from ID format (showtime-{movieId}-{screenIndex}-{slotIndex})
+      if (!showtime && showtimeId.startsWith('showtime-')) {
+        const generated = generateShowtimeFromId(showtimeId)
+        if (generated) {
+          showtime = generated as any
+        }
+      }
+      
       if (showtime) {
         const theaterData = getTheaterByScreenId(showtime.screenId)
         return [{
