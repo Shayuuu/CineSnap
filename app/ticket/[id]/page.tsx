@@ -1,67 +1,87 @@
-import { queryOne, query } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import TicketClient from '@/components/TicketClient'
+import { MOCK_BOOKINGS, MOCK_BOOKING_SEATS, MOCK_SHOWTIMES, MOCK_THEATERS, getTheaterByScreenId } from '@/lib/mockData'
+import { getTmdbApiKey } from '@/lib/config'
 
 type Props = { params: Promise<{ id: string }> }
 
 export default async function TicketPage({ params }: Props) {
   const { id } = await params
-  const booking = await queryOne<any>(
-    'SELECT * FROM Booking WHERE id = ?',
-    [id]
-  )
+  
+  // Get booking from mock data
+  const booking = MOCK_BOOKINGS.find(b => b.id === id)
+  
+  if (!booking) {
+    console.error('[TicketPage] Booking not found:', id)
+    return notFound()
+  }
 
-  if (!booking) return notFound()
+  // Get showtime from mock data
+  const showtime = MOCK_SHOWTIMES.find(st => st.id === booking.showtimeId)
+  if (!showtime) {
+    console.error('[TicketPage] Showtime not found:', booking.showtimeId)
+    return notFound()
+  }
 
-  const showtime = await queryOne<any>(
-    'SELECT * FROM Showtime WHERE id = ?',
-    [booking.showtimeId]
-  )
+  // Get theater and screen info
+  const theaterData = getTheaterByScreenId(showtime.screenId)
+  if (!theaterData) {
+    console.error('[TicketPage] Theater not found for screen:', showtime.screenId)
+    return notFound()
+  }
 
-  if (!showtime) return notFound()
+  // Fetch movie from TMDb API
+  let movie: any = null
+  try {
+    const apiKey = getTmdbApiKey()
+    if (apiKey) {
+      const movieRes = await fetch(
+        `https://api.themoviedb.org/3/movie/${showtime.movieId}?api_key=${apiKey}&language=en-IN`,
+        { cache: 'no-store' }
+      )
+      if (movieRes.ok) {
+        const m = await movieRes.json()
+        movie = {
+          id: String(m.id),
+          title: m.title,
+          posterUrl: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[TicketPage] Failed to fetch movie:', err)
+  }
 
-  const movie = await queryOne<any>(
-    'SELECT * FROM Movie WHERE id = ?',
-    [showtime.movieId]
-  )
+  if (!movie) {
+    console.error('[TicketPage] Movie not found:', showtime.movieId)
+    return notFound()
+  }
 
-  if (!movie) return notFound()
-
-  const screen = await queryOne<any>(
-    'SELECT * FROM Screen WHERE id = ?',
-    [showtime.screenId]
-  )
-
-  if (!screen) return notFound()
-
-  const theater = await queryOne<any>(
-    'SELECT * FROM Theater WHERE id = ?',
-    [screen.theaterId]
-  )
-
-  if (!theater) return notFound()
-
-  // Get booked seats
-  const bookingSeats = await query<any>(
-    `SELECT s.* FROM Seat s
-     INNER JOIN _BookingSeats bs ON s.id = bs.B
-     WHERE bs.A = ?`,
-    [id]
-  )
-
-  const seats = bookingSeats.map((s: any) => `${s.row}${s.number}`)
+  // Get booked seats from mock data
+  const seatIds = MOCK_BOOKING_SEATS[id] || []
+  const seats: string[] = []
+  
+  // Parse seat IDs to get row and number (format: screen-1-A-5)
+  for (const seatId of seatIds) {
+    const parts = seatId.split('-')
+    if (parts.length >= 4) {
+      const row = parts[parts.length - 2]
+      const number = parts[parts.length - 1]
+      seats.push(`${row}${number}`)
+    }
+  }
 
   return (
     <TicketClient
       bookingId={id}
       movieTitle={movie.title}
-      theaterName={theater.name}
-      screenName={screen.name}
+      theaterName={theaterData.theater.name}
+      screenName={theaterData.screen.name}
       showtime={showtime.startTime}
       seats={seats}
-      total={booking.totalAmount}
-      status={booking.status}
-      posterUrl={movie.posterUrl}
+      total={booking.totalAmount || 0}
+      status={booking.status || 'CONFIRMED'}
+      posterUrl={movie.posterUrl || undefined}
     />
   )
 }

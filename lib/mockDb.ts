@@ -106,7 +106,17 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
   }
 
   // Bookings queries
-  if (lowerSql.includes('select') && lowerSql.includes('booking')) {
+  if (lowerSql.includes('select') && lowerSql.includes('booking') && !lowerSql.includes('bookinggroup')) {
+    if (lowerSql.includes('where id =') || lowerSql.includes('where id=')) {
+      const bookingId = params?.[0]
+      const booking = MOCK_BOOKINGS.find(b => b.id === String(bookingId))
+      return (booking ? [booking] : []) as T[]
+    }
+    if (lowerSql.includes('where userid =') || lowerSql.includes('where userid=')) {
+      const userId = params?.[0]
+      const bookings = MOCK_BOOKINGS.filter(b => b.userId === String(userId))
+      return bookings as T[]
+    }
     return MOCK_BOOKINGS as T[]
   }
 
@@ -394,6 +404,14 @@ function mockExecute(sql: string, params?: any[]): any {
       const seatStr = String(seatId)
       if (!booking.seats.includes(seatStr)) {
         booking.seats.push(seatStr)
+      }
+      
+      // Also store in MOCK_BOOKING_SEATS for ticket page retrieval
+      if (!MOCK_BOOKING_SEATS[bookingId]) {
+        MOCK_BOOKING_SEATS[bookingId] = []
+      }
+      if (!MOCK_BOOKING_SEATS[bookingId].includes(seatStr)) {
+        MOCK_BOOKING_SEATS[bookingId].push(seatStr)
       }
     }
     return { affectedRows: 1 }
