@@ -28,7 +28,17 @@ function generateHardcodedShowtimes(movieId: string) {
   // Generate showtimes for each screen
   allScreens.forEach((screen, screenIndex) => {
     slots.forEach((slot, slotIndex) => {
-      const startTime = `${dateStr}T${slot}:00:00.000Z`
+      // Parse slot time (e.g., "10:00" -> hours and minutes)
+      const [hours, minutes] = slot.split(':')
+      const startTimeDate = new Date()
+      startTimeDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
+      
+      // If the time has passed today, set it for tomorrow
+      if (startTimeDate < new Date()) {
+        startTimeDate.setDate(startTimeDate.getDate() + 1)
+      }
+      
+      const startTime = startTimeDate.toISOString()
       const theaterData = getTheaterByScreenId(screen.id)
       
       showtimes.push({
