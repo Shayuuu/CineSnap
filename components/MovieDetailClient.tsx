@@ -55,6 +55,9 @@ export default function MovieDetailClient({ movie, showtimes = [], recommendatio
     )
   }
   
+  // Debug logging
+  console.log('[MovieDetailClient] Received showtimes:', showtimes.length, showtimes)
+  
   // Group showtimes by theater
   const showtimesByTheater = (showtimes || []).reduce((acc, show) => {
     if (!show) return acc
@@ -69,6 +72,8 @@ export default function MovieDetailClient({ movie, showtimes = [], recommendatio
     acc[theaterKey].showtimes.push(show)
     return acc
   }, {} as Record<string, { theaterName: string; theaterLocation?: string; showtimes: typeof showtimes }>)
+  
+  console.log('[MovieDetailClient] Grouped by theater:', Object.keys(showtimesByTheater).length, 'theaters', showtimesByTheater)
 
   // Format time helper
   const formatTime = (dateStr: string) => {

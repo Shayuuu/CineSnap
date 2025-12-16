@@ -129,7 +129,14 @@ function generateSeats(screenId: string, rows: number, seatsPerRow: number) {
   return seats
 }
 
-export const MOCK_SHOWTIMES = [
+// Use a mutable array so we can push to it
+export const MOCK_SHOWTIMES: Array<{
+  id: string
+  movieId: string
+  screenId: string
+  startTime: string
+  price: number
+}> = [
   {
     id: 'showtime-1',
     movieId: '550',

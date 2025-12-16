@@ -176,9 +176,14 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
   // Showtimes with JOIN queries (Showtime JOIN Screen JOIN Theater)
   if (lowerSql.includes('select') && lowerSql.includes('showtime') && (lowerSql.includes('join') || lowerSql.includes('screen') || lowerSql.includes('theater'))) {
     const movieId = params?.[0]
+    console.log('[mockDb] JOIN query for showtimes, movieId:', movieId)
+    console.log('[mockDb] Total MOCK_SHOWTIMES:', MOCK_SHOWTIMES.length)
+    
     let showtimes = movieId 
       ? MOCK_SHOWTIMES.filter(st => String(st.movieId) === String(movieId))
       : MOCK_SHOWTIMES
+    
+    console.log('[mockDb] Filtered showtimes for movie:', showtimes.length)
     
     // In showcase mode, skip date filtering entirely to show all showtimes
     // Filter by startTime >= NOW() if present in query (but be very lenient)
@@ -215,7 +220,7 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
       const theaterData = getTheaterByScreenId(screenIdStr)
       
       if (theaterData) {
-        return {
+        const result = {
           id: st.id,
           startTime: st.startTime,
           price: st.price,
@@ -226,13 +231,15 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
           theaterLocation: theaterData.theater.location || 'Mumbai',
           movieId: st.movieId,
         }
+        console.log('[mockDb] Mapped showtime:', result.id, 'theater:', result.theaterName)
+        return result
       }
       
       // Fallback: use first theater if screen not found
       const firstTheater = MOCK_THEATERS[0]
       const firstScreen = firstTheater?.screens[0]
       
-      return {
+      const result = {
         id: st.id,
         startTime: st.startTime,
         price: st.price,
@@ -243,7 +250,11 @@ function mockQuery<T = any>(sql: string, params?: any[]): T[] {
         theaterLocation: firstTheater?.location || 'Mumbai',
         movieId: st.movieId,
       }
+      console.log('[mockDb] Mapped showtime (fallback):', result.id, 'theater:', result.theaterName)
+      return result
     })
+    
+    console.log('[mockDb] Returning', results.length, 'showtimes with theater info')
 
     // Sort by theater name and start time if ORDER BY is present
     if (lowerSql.includes('order by')) {
@@ -387,8 +398,12 @@ function mockExecute(sql: string, params?: any[]): any {
 
     // Check if showtime already exists (for ON DUPLICATE KEY UPDATE)
     if (lowerSql.includes('on duplicate key update')) {
-      const existing = MOCK_SHOWTIMES.find(st => st.id === showtimeId || (st.movieId === String(movieId) && st.screenId === String(screenId) && st.startTime === String(startTime)))
+      const existing = MOCK_SHOWTIMES.find(st => 
+        st.id === showtimeId || 
+        (st.movieId === String(movieId) && st.screenId === String(screenId) && st.startTime === String(startTime))
+      )
       if (existing) {
+        console.log('[mockDb] Showtime already exists, skipping:', showtimeId)
         return { insertId: existing.id, affectedRows: 0 }
       }
     }
@@ -402,15 +417,20 @@ function mockExecute(sql: string, params?: any[]): any {
     if (!screenExists && MOCK_THEATERS.length > 0) {
       // Use first available screen from first theater
       validScreenId = MOCK_THEATERS[0].screens[0]?.id || 'screen-1'
+      console.log('[mockDb] Screen not found, using fallback:', validScreenId)
     }
 
-    MOCK_SHOWTIMES.push({
+    const newShowtime = {
       id: showtimeId,
       movieId: String(movieId),
       screenId: validScreenId,
       startTime: String(startTime),
       price: Number(price),
-    })
+    }
+    
+    MOCK_SHOWTIMES.push(newShowtime)
+    console.log('[mockDb] Added showtime:', newShowtime.id, 'for movie', movieId, 'on screen', validScreenId)
+    console.log('[mockDb] Total showtimes now:', MOCK_SHOWTIMES.length)
 
     return { insertId: showtimeId, affectedRows: 1 }
   }

@@ -9,15 +9,26 @@ type Props = {
 
 async function generateShowtimes(movieId: string) {
   try {
-    const existing = await query<any>('SELECT id FROM Showtime WHERE movieId = ? LIMIT 1', [movieId])
-    if (existing.length > 0) return
+    const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
+    
+    // In showcase mode, always generate (or regenerate) showtimes
+    if (!isShowcaseMode) {
+      const existing = await query<any>('SELECT id FROM Showtime WHERE movieId = ? LIMIT 1', [movieId])
+      if (existing.length > 0) return
+    }
 
     const screens = await query<any>('SELECT id, name FROM Screen')
-    if (screens.length === 0) return
+    if (screens.length === 0) {
+      console.log('[generateShowtimes] No screens found')
+      return
+    }
+
+    console.log(`[generateShowtimes] Generating showtimes for movie ${movieId} on ${screens.length} screens`)
 
     const slots = ['10:00', '13:00', '16:00', '19:00', '22:00']
     const today = new Date()
     const dateStr = today.toISOString().split('T')[0]
+    let generatedCount = 0
 
     for (const screen of screens) {
       for (const slot of slots) {
@@ -25,14 +36,22 @@ async function generateShowtimes(movieId: string) {
         const startTime = `${dateStr}T${slot}:00:00.000Z`
         const showId = randomBytes(12).toString('hex')
         const price = 45000 + Math.floor(Math.random() * 15000) // ₹450-₹600
-        await execute(
-          'INSERT INTO Showtime (id, movieId, screenId, startTime, price) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id=id',
-          [showId, movieId, screen.id, startTime, price]
-        )
+        
+        try {
+          await execute(
+            'INSERT INTO Showtime (id, movieId, screenId, startTime, price) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id=id',
+            [showId, movieId, screen.id, startTime, price]
+          )
+          generatedCount++
+        } catch (insertErr) {
+          console.error(`[generateShowtimes] Failed to insert showtime:`, insertErr)
+        }
       }
     }
+    
+    console.log(`[generateShowtimes] Generated ${generatedCount} showtimes for movie ${movieId}`)
   } catch (err) {
-    console.error('generateShowtimes error:', err)
+    console.error('[generateShowtimes] Error:', err)
   }
 }
 
@@ -241,6 +260,10 @@ export default async function MovieDetailPage({ params }: Props) {
     await generateShowtimes(movie.id)
 
     try {
+      // In showcase mode, don't filter by date
+      const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
+      const dateFilter = isShowcaseMode ? '' : 'AND s.startTime >= NOW()'
+      
       showtimes = await query<any>(`
         SELECT 
           s.id, s.startTime, s.price,
@@ -249,7 +272,7 @@ export default async function MovieDetailPage({ params }: Props) {
         FROM Showtime s
         JOIN Screen sc ON s.screenId = sc.id
         JOIN Theater t ON sc.theaterId = t.id
-        WHERE s.movieId = ? AND s.startTime >= NOW()
+        WHERE s.movieId = ? ${dateFilter}
         ORDER BY t.name ASC, s.startTime ASC
       `, [movie.id])
       
@@ -261,6 +284,9 @@ export default async function MovieDetailPage({ params }: Props) {
         await generateShowtimes(movie.id)
         // Try fetching again
         try {
+          const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
+          const dateFilter = isShowcaseMode ? '' : 'AND s.startTime >= NOW()'
+          
           showtimes = await query<any>(`
             SELECT 
               s.id, s.startTime, s.price,
@@ -269,7 +295,7 @@ export default async function MovieDetailPage({ params }: Props) {
             FROM Showtime s
             JOIN Screen sc ON s.screenId = sc.id
             JOIN Theater t ON sc.theaterId = t.id
-            WHERE s.movieId = ?
+            WHERE s.movieId = ? ${dateFilter}
             ORDER BY t.name ASC, s.startTime ASC
           `, [movie.id])
           console.log(`[MovieDetailPage] After regeneration, found ${showtimes.length} showtimes`)
