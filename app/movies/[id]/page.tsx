@@ -1,58 +1,51 @@
-import { query, queryOne, execute } from '@/lib/db'
 import { notFound } from 'next/navigation'
 import MovieDetailClient from '@/components/MovieDetailClient'
-import { randomBytes } from 'crypto'
+import { MOCK_THEATERS, getTheaterByScreenId } from '@/lib/mockData'
 
 type Props = {
   params: Promise<{ id: string }>
 }
 
-async function generateShowtimes(movieId: string) {
-  try {
-    const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
-    
-    // In showcase mode, always generate (or regenerate) showtimes
-    if (!isShowcaseMode) {
-      const existing = await query<any>('SELECT id FROM Showtime WHERE movieId = ? LIMIT 1', [movieId])
-      if (existing.length > 0) return
-    }
-
-    const screens = await query<any>('SELECT id, name FROM Screen')
-    if (screens.length === 0) {
-      console.log('[generateShowtimes] No screens found')
-      return
-    }
-
-    console.log(`[generateShowtimes] Generating showtimes for movie ${movieId} on ${screens.length} screens`)
-
-    const slots = ['10:00', '13:00', '16:00', '19:00', '22:00']
-    const today = new Date()
-    const dateStr = today.toISOString().split('T')[0]
-    let generatedCount = 0
-
-    for (const screen of screens) {
-      for (const slot of slots) {
-        // Create proper ISO datetime string for better parsing
-        const startTime = `${dateStr}T${slot}:00:00.000Z`
-        const showId = randomBytes(12).toString('hex')
-        const price = 45000 + Math.floor(Math.random() * 15000) // ₹450-₹600
-        
-        try {
-          await execute(
-            'INSERT INTO Showtime (id, movieId, screenId, startTime, price) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id=id',
-            [showId, movieId, screen.id, startTime, price]
-          )
-          generatedCount++
-        } catch (insertErr) {
-          console.error(`[generateShowtimes] Failed to insert showtime:`, insertErr)
-        }
-      }
-    }
-    
-    console.log(`[generateShowtimes] Generated ${generatedCount} showtimes for movie ${movieId}`)
-  } catch (err) {
-    console.error('[generateShowtimes] Error:', err)
-  }
+// Generate hardcoded showtimes for any movie
+function generateHardcodedShowtimes(movieId: string) {
+  const slots = ['10:00', '13:00', '16:00', '19:00', '22:00']
+  const today = new Date()
+  const dateStr = today.toISOString().split('T')[0]
+  const showtimes: any[] = []
+  
+  // Get all screens from mock theaters
+  const allScreens: Array<{ id: string; name: string; theaterId: string }> = []
+  MOCK_THEATERS.forEach(theater => {
+    theater.screens.forEach(screen => {
+      allScreens.push({
+        id: screen.id,
+        name: screen.name,
+        theaterId: theater.id,
+      })
+    })
+  })
+  
+  // Generate showtimes for each screen
+  allScreens.forEach((screen, screenIndex) => {
+    slots.forEach((slot, slotIndex) => {
+      const startTime = `${dateStr}T${slot}:00:00.000Z`
+      const theaterData = getTheaterByScreenId(screen.id)
+      
+      showtimes.push({
+        id: `showtime-${movieId}-${screenIndex}-${slotIndex}`,
+        startTime,
+        price: 45000 + Math.floor(Math.random() * 15000), // ₹450-₹600
+        screenId: screen.id,
+        screenName: screen.name,
+        theaterId: theaterData?.theater.id || MOCK_THEATERS[0].id,
+        theaterName: theaterData?.theater.name || MOCK_THEATERS[0].name,
+        theaterLocation: theaterData?.theater.location || MOCK_THEATERS[0].location,
+        movieId,
+      })
+    })
+  })
+  
+  return showtimes
 }
 
 export default async function MovieDetailPage({ params }: Props) {
@@ -183,45 +176,9 @@ export default async function MovieDetailPage({ params }: Props) {
     console.warn('⚠️  TMDb API key not available. Check lib/config.ts')
   }
 
-  // Fallback to DB if TMDb not available
-  if (!movie) {
-    try {
-      const dbMovie = await queryOne<any>('SELECT * FROM Movie WHERE id = ?', [id])
-      if (!dbMovie) return notFound()
-      movie = {
-        id: dbMovie.id,
-        title: dbMovie.title,
-        runtime: dbMovie.duration,
-        releaseDate: dbMovie.releaseDate,
-        posterUrl: dbMovie.posterUrl,
-        genres: [dbMovie.genre].filter(Boolean),
-      }
-    } catch (dbErr) {
-      console.error('⚠️  Database query failed:', dbErr)
-      return notFound()
-    }
-  }
-
   // If movie is still null after all attempts, return 404
   if (!movie) {
     return notFound()
-  }
-
-  // Upsert movie into DB for showtimes
-  try {
-    await execute(
-      'INSERT INTO Movie (id, title, posterUrl, duration, genre, releaseDate) VALUES (?, ?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE id=id',
-      [
-        movie.id,
-        movie.title,
-        movie.posterUrl || '',
-        movie.runtime || 120,
-        (movie.genres && movie.genres[0]) || 'Feature',
-        movie.releaseDate || null,
-      ]
-    )
-  } catch (err) {
-    console.error('Upsert movie failed:', err)
   }
 
   // Recommendations
@@ -236,77 +193,17 @@ export default async function MovieDetailPage({ params }: Props) {
     console.error('Recommendations fetch failed:', err)
   }
 
-  // In showcase mode, always show showtimes for any movie
-  // In production, check if movie is still in theaters
-  const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
-  const isMovieInTheaters = isShowcaseMode ? true : (() => {
-    if (!movie.releaseDate) return true // If no release date, assume it's playing
-    
-    const releaseDate = new Date(movie.releaseDate)
-    const today = new Date()
-    const threeMonthsAgo = new Date(today)
-    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
-    
-    // Movie is in theaters if:
-    // 1. Release date is in the future (upcoming)
-    // 2. Release date is within the last 3 months (currently playing)
-    return releaseDate >= threeMonthsAgo
-  })()
-
-  // Generate and fetch showtimes
-  let showtimes: any[] = []
-  if (isMovieInTheaters) {
-    // Generate showtimes if missing
-    await generateShowtimes(movie.id)
-
-    try {
-      // In showcase mode, don't filter by date
-      const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
-      const dateFilter = isShowcaseMode ? '' : 'AND s.startTime >= NOW()'
-      
-      showtimes = await query<any>(`
-        SELECT 
-          s.id, s.startTime, s.price,
-          sc.id as screenId, sc.name as screenName,
-          t.id as theaterId, t.name as theaterName, t.location as theaterLocation
-        FROM Showtime s
-        JOIN Screen sc ON s.screenId = sc.id
-        JOIN Theater t ON sc.theaterId = t.id
-        WHERE s.movieId = ? ${dateFilter}
-        ORDER BY t.name ASC, s.startTime ASC
-      `, [movie.id])
-      
-      console.log(`[MovieDetailPage] Found ${showtimes.length} showtimes for movie ${movie.id}`)
-      
-      // If no showtimes found, try generating them again
-      if (showtimes.length === 0) {
-        console.log('[MovieDetailPage] No showtimes found, regenerating...')
-        await generateShowtimes(movie.id)
-        // Try fetching again
-        try {
-          const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
-          const dateFilter = isShowcaseMode ? '' : 'AND s.startTime >= NOW()'
-          
-          showtimes = await query<any>(`
-            SELECT 
-              s.id, s.startTime, s.price,
-              sc.id as screenId, sc.name as screenName,
-              t.id as theaterId, t.name as theaterName, t.location as theaterLocation
-            FROM Showtime s
-            JOIN Screen sc ON s.screenId = sc.id
-            JOIN Theater t ON sc.theaterId = t.id
-            WHERE s.movieId = ? ${dateFilter}
-            ORDER BY t.name ASC, s.startTime ASC
-          `, [movie.id])
-          console.log(`[MovieDetailPage] After regeneration, found ${showtimes.length} showtimes`)
-        } catch (retryErr) {
-          console.error('Retry fetch showtimes failed:', retryErr)
-        }
-      }
-    } catch (err) {
-      console.error('Fetch showtimes failed:', err)
-    }
-  }
+  // Generate hardcoded showtimes for this movie (always show showtimes)
+  const showtimes = generateHardcodedShowtimes(movie.id)
+  
+  // Sort showtimes by theater name and start time
+  showtimes.sort((a, b) => {
+    const theaterCompare = (a.theaterName || '').localeCompare(b.theaterName || '')
+    if (theaterCompare !== 0) return theaterCompare
+    return new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+  })
+  
+  console.log(`[MovieDetailPage] Generated ${showtimes.length} hardcoded showtimes for movie ${movie.id}`)
 
   return (
     <MovieDetailClient 
