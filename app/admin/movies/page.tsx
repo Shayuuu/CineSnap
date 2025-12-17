@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic'
 
 export default async function AdminMoviesPage() {
   const movies = await query<any>(
-    'SELECT * FROM Movie ORDER BY releaseDate DESC'
+    'SELECT * FROM "Movie" ORDER BY "releaseDate" DESC'
   )
 
   return (
