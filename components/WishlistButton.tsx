@@ -44,8 +44,12 @@ export default function WishlistButton({ movieId, className = '' }: Props) {
         const res = await fetch(`/api/wishlist?movieId=${movieId}`, {
           method: 'DELETE',
         })
-        if (res.ok) {
-          setInWishlist(false)
+        const data = await res.json()
+        if (res.ok || res.status === 200) {
+          // Only update state if feature is available (not unavailable)
+          if (!data.unavailable) {
+            setInWishlist(false)
+          }
         }
       } else {
         const res = await fetch('/api/wishlist', {
@@ -53,8 +57,18 @@ export default function WishlistButton({ movieId, className = '' }: Props) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ movieId }),
         })
-        if (res.ok) {
-          setInWishlist(true)
+        const data = await res.json()
+        if (res.ok || res.status === 200) {
+          // Only update state if feature is available (not unavailable)
+          if (!data.unavailable) {
+            setInWishlist(true)
+          } else {
+            // Feature unavailable - could show a toast notification here
+            console.log('Wishlist feature is not available. Please run database migration.')
+          }
+        } else {
+          const errorData = await res.json().catch(() => ({}))
+          console.error('Failed to toggle wishlist:', errorData.error || 'Unknown error')
         }
       }
     } catch (err) {

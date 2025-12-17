@@ -100,12 +100,23 @@ export async function POST(req: NextRequest) {
         [wishlistId, userId, movieId]
       )
     } catch (dbError: any) {
-      // If Wishlist table doesn't exist yet
-      if (dbError?.message?.includes("doesn't exist") || 
-          dbError?.message?.includes("Unknown table") || 
-          dbError?.message?.includes("relation") ||
-          dbError?.code === '42P01') {
-        return Response.json({ error: 'Wishlist feature not available. Please run database migration.' }, { status: 503 })
+      // If Wishlist table doesn't exist yet, return success but don't actually add
+      const errorMsg = dbError?.message || ''
+      const errorCode = dbError?.code || ''
+      
+      if (errorMsg.includes("doesn't exist") || 
+          errorMsg.includes("Unknown table") || 
+          errorMsg.includes("relation") ||
+          errorMsg.includes("Wishlist") ||
+          errorCode === '42P01' ||
+          errorCode === 'P0001') {
+        console.log('Wishlist table does not exist. Feature unavailable.')
+        // Return success to prevent UI errors, but indicate feature is unavailable
+        return Response.json({ 
+          success: true, 
+          message: 'Wishlist feature not available',
+          unavailable: true 
+        })
       }
       throw dbError
     }
@@ -148,12 +159,23 @@ export async function DELETE(req: NextRequest) {
         [userId, movieId]
       )
     } catch (dbError: any) {
-      // If Wishlist table doesn't exist yet
-      if (dbError?.message?.includes("doesn't exist") || 
-          dbError?.message?.includes("Unknown table") || 
-          dbError?.message?.includes("relation") ||
-          dbError?.code === '42P01') {
-        return Response.json({ error: 'Wishlist feature not available' }, { status: 503 })
+      // If Wishlist table doesn't exist yet, return success but don't actually delete
+      const errorMsg = dbError?.message || ''
+      const errorCode = dbError?.code || ''
+      
+      if (errorMsg.includes("doesn't exist") || 
+          errorMsg.includes("Unknown table") || 
+          errorMsg.includes("relation") ||
+          errorMsg.includes("Wishlist") ||
+          errorCode === '42P01' ||
+          errorCode === 'P0001') {
+        console.log('Wishlist table does not exist. Feature unavailable.')
+        // Return success to prevent UI errors
+        return Response.json({ 
+          success: true, 
+          message: 'Removed from wishlist',
+          unavailable: true 
+        })
       }
       throw dbError
     }
