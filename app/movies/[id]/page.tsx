@@ -179,7 +179,7 @@ export default async function MovieDetailPage({ params }: Props) {
         )
       } catch (insertErr: any) {
         // Ignore duplicate key errors
-        if (!insertErr.message?.includes('duplicate') && !insertErr.code === '23505') {
+        if (!insertErr.message?.includes('duplicate') && insertErr.code !== '23505') {
           console.error('Failed to create Movie record:', insertErr)
         }
       }
