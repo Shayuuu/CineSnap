@@ -149,6 +149,10 @@ export default async function MovieDetailPage({ params }: Props) {
       const STREAMING_PROVIDER_IDS = [8, 9, 2, 337, 350] // Netflix, Prime Video, Apple TV+, Disney+ Hotstar (old & new)
       
       // Check if movie is streaming-only (has ONLY Netflix, Prime, Apple TV+, or Jio Hotstar)
+      // A movie is OTT-only if:
+      // 1. It has watch providers
+      // 2. It has at least one of the 4 streaming platforms
+      // 3. ALL providers are from the 4 streaming platforms (no other providers)
       const isOTTMovie = watchProviders && (() => {
         const allProviders = [
           ...(watchProviders.flatrate || []),
@@ -156,15 +160,24 @@ export default async function MovieDetailPage({ params }: Props) {
           ...(watchProviders.rent || [])
         ]
         
-        // Must have at least one streaming provider
-        const hasStreaming = allProviders.some((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))
-        
-        // If it has streaming providers, check if it ONLY has streaming (no other providers)
-        if (hasStreaming && allProviders.length > 0) {
-          return allProviders.every((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))
+        // If no providers at all, it's not OTT-only (show showtimes)
+        if (allProviders.length === 0) {
+          return false
         }
         
-        return false
+        // Check if it has at least one of the 4 streaming platforms
+        const hasStreaming = allProviders.some((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))
+        
+        // If it doesn't have any of the 4 streaming platforms, it's not OTT-only (show showtimes)
+        if (!hasStreaming) {
+          return false
+        }
+        
+        // If it has streaming platforms, check if ALL providers are from streaming platforms
+        // If there are any non-streaming providers, it's not OTT-only (show showtimes)
+        const allAreStreaming = allProviders.every((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))
+        
+        return allAreStreaming
       })()
 
   // Debug log
