@@ -28,12 +28,23 @@ export async function GET(req: NextRequest) {
       return Response.json({ inWishlist: false })
     }
 
-    const wishlistItem = await queryOne<any>(
-      'SELECT id FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
-      [userId, movieId]
-    )
+    try {
+      const wishlistItem = await queryOne<any>(
+        'SELECT id FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
+        [userId, movieId]
+      )
 
-    return Response.json({ inWishlist: !!wishlistItem })
+      return Response.json({ inWishlist: !!wishlistItem })
+    } catch (dbError: any) {
+      // If Wishlist table doesn't exist yet, return false
+      if (dbError?.message?.includes("doesn't exist") || 
+          dbError?.message?.includes("Unknown table") || 
+          dbError?.message?.includes("relation") ||
+          dbError?.code === '42P01') {
+        return Response.json({ inWishlist: false })
+      }
+      throw dbError
+    }
   } catch (error: any) {
     console.error('Failed to check wishlist:', error)
     return Response.json({ inWishlist: false })

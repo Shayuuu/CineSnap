@@ -22,16 +22,28 @@ export async function GET(req: NextRequest) {
       return Response.json({ error: 'User not found' }, { status: 404 })
     }
 
-    const wishlist = await query<any>(
-      `SELECT w.*, m.title as "movieTitle", m."posterUrl", m."releaseDate"
-       FROM "Wishlist" w
-       INNER JOIN "Movie" m ON w."movieId" = m.id
-       WHERE w."userId" = $1
-       ORDER BY w."createdAt" DESC`,
-      [userId]
-    )
+    try {
+      const wishlist = await query<any>(
+        `SELECT w.*, m.title as "movieTitle", m."posterUrl", m."releaseDate"
+         FROM "Wishlist" w
+         INNER JOIN "Movie" m ON w."movieId" = m.id
+         WHERE w."userId" = $1
+         ORDER BY w."createdAt" DESC`,
+        [userId]
+      )
 
-    return Response.json({ wishlist: wishlist || [] })
+      return Response.json({ wishlist: wishlist || [] })
+    } catch (dbError: any) {
+      // If Wishlist table doesn't exist yet, return empty array
+      if (dbError?.message?.includes("doesn't exist") || 
+          dbError?.message?.includes("Unknown table") || 
+          dbError?.message?.includes("relation") ||
+          dbError?.code === '42P01') {
+        console.log('Wishlist table does not exist yet. Returning empty array.')
+        return Response.json({ wishlist: [] })
+      }
+      throw dbError
+    }
   } catch (error: any) {
     console.error('Failed to fetch wishlist:', error)
     return Response.json({ error: 'Failed to fetch wishlist', details: error.message }, { status: 500 })
@@ -62,21 +74,32 @@ export async function POST(req: NextRequest) {
       return Response.json({ error: 'movieId is required' }, { status: 400 })
     }
 
-    // Check if already in wishlist
-    const existing = await queryOne<any>(
-      'SELECT id FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
-      [userId, movieId]
-    )
+    try {
+      // Check if already in wishlist
+      const existing = await queryOne<any>(
+        'SELECT id FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
+        [userId, movieId]
+      )
 
-    if (existing) {
-      return Response.json({ error: 'Movie already in wishlist' }, { status: 400 })
+      if (existing) {
+        return Response.json({ error: 'Movie already in wishlist' }, { status: 400 })
+      }
+
+      const wishlistId = randomBytes(16).toString('hex')
+      await execute(
+        'INSERT INTO "Wishlist" (id, "userId", "movieId") VALUES ($1, $2, $3)',
+        [wishlistId, userId, movieId]
+      )
+    } catch (dbError: any) {
+      // If Wishlist table doesn't exist yet
+      if (dbError?.message?.includes("doesn't exist") || 
+          dbError?.message?.includes("Unknown table") || 
+          dbError?.message?.includes("relation") ||
+          dbError?.code === '42P01') {
+        return Response.json({ error: 'Wishlist feature not available. Please run database migration.' }, { status: 503 })
+      }
+      throw dbError
     }
-
-    const wishlistId = randomBytes(16).toString('hex')
-    await execute(
-      'INSERT INTO "Wishlist" (id, "userId", "movieId") VALUES ($1, $2, $3)',
-      [wishlistId, userId, movieId]
-    )
 
     return Response.json({ success: true, message: 'Added to wishlist' })
   } catch (error: any) {
@@ -110,10 +133,21 @@ export async function DELETE(req: NextRequest) {
       return Response.json({ error: 'movieId is required' }, { status: 400 })
     }
 
-    await execute(
-      'DELETE FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
-      [userId, movieId]
-    )
+    try {
+      await execute(
+        'DELETE FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
+        [userId, movieId]
+      )
+    } catch (dbError: any) {
+      // If Wishlist table doesn't exist yet
+      if (dbError?.message?.includes("doesn't exist") || 
+          dbError?.message?.includes("Unknown table") || 
+          dbError?.message?.includes("relation") ||
+          dbError?.code === '42P01') {
+        return Response.json({ error: 'Wishlist feature not available' }, { status: 503 })
+      }
+      throw dbError
+    }
 
     return Response.json({ success: true, message: 'Removed from wishlist' })
   } catch (error: any) {

@@ -38,9 +38,16 @@ export default function WishlistPage() {
       if (res.ok) {
         const data = await res.json()
         setWishlist(data.wishlist || [])
+      } else if (res.status === 503) {
+        // Wishlist table doesn't exist - show empty state
+        setWishlist([])
+      } else {
+        console.error('Failed to fetch wishlist:', res.statusText)
       }
     } catch (err) {
       console.error('Failed to fetch wishlist:', err)
+      // On error, show empty array to prevent UI issues
+      setWishlist([])
     } finally {
       setLoading(false)
     }
