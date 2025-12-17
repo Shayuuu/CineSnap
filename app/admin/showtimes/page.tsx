@@ -2,6 +2,9 @@ import AdminGuard from '@/components/AdminGuard'
 import { query } from '@/lib/db'
 import AdminShowtimesClient from '@/components/AdminShowtimesClient'
 
+// Force dynamic rendering to prevent static generation
+export const dynamic = 'force-dynamic'
+
 export default async function AdminShowtimesPage() {
   const showtimes = await query<any>(`
     SELECT 

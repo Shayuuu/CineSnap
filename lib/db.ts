@@ -2,18 +2,28 @@ import { Pool, PoolClient } from 'pg'
 
 let pool: Pool | null = null
 
-function createPool() {
+function createPool(): Pool | null {
   if (!pool) {
     // Neon PostgreSQL connection string
     const databaseUrl = process.env.DATABASE_URL
 
     if (!databaseUrl) {
-      console.error('❌ DATABASE_URL environment variable is not set!')
-      console.error('📝 Please add DATABASE_URL to your .env.local file')
-      console.error('📖 Get your connection string from Neon dashboard: https://console.neon.tech')
-      console.error('💡 Format: postgresql://user:password@host/database?sslmode=require')
-      console.error('💡 After adding, restart your dev server!')
-      throw new Error('DATABASE_URL is not set. Please add Neon PostgreSQL connection string to .env.local and restart the server.')
+      // During build time, allow undefined DATABASE_URL (will return null)
+      // In production/runtime, this should be set
+      if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
+        console.warn('⚠️ DATABASE_URL environment variable is not set!')
+        console.warn('📝 Please add DATABASE_URL to your Vercel environment variables')
+        console.warn('📖 Get your connection string from Neon dashboard: https://console.neon.tech')
+        // Don't throw during build - allow build to complete
+        return null
+      }
+      // In development, warn but don't throw during build
+      if (process.env.NEXT_PHASE !== 'phase-production-build') {
+        console.warn('⚠️ DATABASE_URL environment variable is not set!')
+        console.warn('📝 Please add DATABASE_URL to your .env.local file')
+        console.warn('📖 Get your connection string from Neon dashboard: https://console.neon.tech')
+      }
+      return null
     }
 
     // Parse connection string to show info (without password)
@@ -61,11 +71,21 @@ export async function query<T = any>(sql: string, params?: any[]): Promise<T[]> 
   try {
     const pool = createPool()
     if (!pool) {
-      throw new Error('Database pool is not initialized')
+      // During build time, return empty array instead of throwing
+      if (process.env.NEXT_PHASE === 'phase-production-build') {
+        console.warn('⚠️ Database not available during build, returning empty array')
+        return []
+      }
+      throw new Error('Database pool is not initialized. DATABASE_URL is not set.')
     }
     const result = await pool.query(sql, params || [])
     return result.rows as T[]
   } catch (error: any) {
+    // During build time, return empty array instead of throwing
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      console.warn('⚠️ Database query failed during build:', error?.message || error)
+      return []
+    }
     console.error('Database query error:', error?.message || error)
     console.error('SQL:', sql)
     console.error('Params:', params)
@@ -82,11 +102,21 @@ export async function execute(sql: string, params?: any[]): Promise<any> {
   try {
     const pool = createPool()
     if (!pool) {
-      throw new Error('Database pool is not initialized')
+      // During build time, return empty result instead of throwing
+      if (process.env.NEXT_PHASE === 'phase-production-build') {
+        console.warn('⚠️ Database not available during build, returning empty result')
+        return { rowCount: 0, rows: [] }
+      }
+      throw new Error('Database pool is not initialized. DATABASE_URL is not set.')
     }
     const result = await pool.query(sql, params || [])
     return result
   } catch (error: any) {
+    // During build time, return empty result instead of throwing
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      console.warn('⚠️ Database execute failed during build:', error?.message || error)
+      return { rowCount: 0, rows: [] }
+    }
     console.error('Database execute error:', error?.message || error)
     console.error('SQL:', sql)
     console.error('Params:', params)
