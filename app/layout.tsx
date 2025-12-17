@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import CustomCursor from '@/components/CustomCursor'
 import SocialProofTicker from '@/components/SocialProofTicker'
@@ -14,6 +14,9 @@ export const metadata: Metadata = {
   title: 'CineSnap - Premium Movie Booking Experience',
   description: 'Book your movie tickets with real-time seat locking. Premium cinema-grade experience.',
   manifest: '/manifest.json',
+}
+
+export const viewport: Viewport = {
   themeColor: '#0a0a0a',
 }
 
