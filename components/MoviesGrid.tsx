@@ -46,12 +46,12 @@ export default function MoviesGrid({ movies }: Props) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Link href={`/movies/${movie.id}`} className="group">
+              <Link href={`/movies/${movie.id}`}>
                 <motion.div
                   whileHover={{ scale: 1.05, y: -10, rotateY: 5 }}
                   whileTap={{ scale: 0.98 }}
                   transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  className="glass-enhanced rounded-xl sm:rounded-2xl overflow-hidden group cursor-pointer border border-white/10 hover:border-cyan-400/30 hover:shadow-[0_8px_32px_rgba(0,249,255,0.2),0_0_60px_rgba(255,45,146,0.1)] transition-all duration-300"
+                  className="glass-enhanced rounded-2xl overflow-hidden group cursor-pointer hover-lift"
                 >
                   <div className="aspect-[2/3] bg-gradient-to-br from-white/10 to-white/5 border border-white/10 relative overflow-hidden">
                     {movie.posterUrl ? (
