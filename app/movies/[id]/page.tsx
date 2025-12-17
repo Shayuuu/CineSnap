@@ -141,16 +141,31 @@ export default async function MovieDetailPage({ params }: Props) {
     }
   }
 
-  if (!movie) {
-    return notFound()
-  }
+      if (!movie) {
+        return notFound()
+      }
 
-  // If movie has watch providers (OTT), don't fetch showtimes
-  const isOTTMovie = watchProviders && (
-    (watchProviders.flatrate && watchProviders.flatrate.length > 0) ||
-    (watchProviders.buy && watchProviders.buy.length > 0) ||
-    (watchProviders.rent && watchProviders.rent.length > 0)
-  )
+      // Streaming platform provider IDs (Netflix, Prime, Apple TV+, Jio Hotstar)
+      const STREAMING_PROVIDER_IDS = [8, 9, 2, 337, 350] // Netflix, Prime Video, Apple TV+, Disney+ Hotstar (old & new)
+      
+      // Check if movie is streaming-only (has ONLY Netflix, Prime, Apple TV+, or Jio Hotstar)
+      const isOTTMovie = watchProviders && (() => {
+        const allProviders = [
+          ...(watchProviders.flatrate || []),
+          ...(watchProviders.buy || []),
+          ...(watchProviders.rent || [])
+        ]
+        
+        // Must have at least one streaming provider
+        const hasStreaming = allProviders.some((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))
+        
+        // If it has streaming providers, check if it ONLY has streaming (no other providers)
+        if (hasStreaming && allProviders.length > 0) {
+          return allProviders.every((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))
+        }
+        
+        return false
+      })()
 
   // Debug log
   if (process.env.NODE_ENV === 'development') {

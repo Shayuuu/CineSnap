@@ -36,6 +36,52 @@ function mapMovie(m: TMDBMovie) {
 
 const TMDB_BASE = 'https://api.themoviedb.org/3'
 
+// Streaming platform provider IDs (Netflix, Prime, Apple TV+, Jio Hotstar)
+const STREAMING_PROVIDER_IDS = [8, 9, 2, 337, 350] // Netflix, Prime Video, Apple TV+, Disney+ Hotstar (old & new)
+
+// Check if a movie is streaming-only (has only streaming platforms, no cinema showtimes)
+async function isStreamingOnly(movieId: string, apiKey: string): Promise<boolean> {
+  try {
+    const providersRes = await fetch(
+      `https://api.themoviedb.org/3/movie/${movieId}/watch/providers?api_key=${apiKey}`,
+      { 
+        next: { revalidate: 3600 },
+        headers: { 'Accept': 'application/json' }
+      }
+    )
+    
+    if (!providersRes.ok) return false
+    
+    const providersData = await providersRes.json()
+    const providers = providersData.results?.IN || providersData.results?.US || null
+    
+    if (!providers) return false
+    
+    // Check if movie has streaming providers
+    const hasStreaming = (
+      (providers.flatrate && providers.flatrate.some((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))) ||
+      (providers.buy && providers.buy.some((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))) ||
+      (providers.rent && providers.rent.some((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id)))
+    )
+    
+    // If it has streaming providers, check if it ONLY has streaming (no other providers)
+    if (hasStreaming) {
+      const allProviders = [
+        ...(providers.flatrate || []),
+        ...(providers.buy || []),
+        ...(providers.rent || [])
+      ]
+      // If all providers are streaming-only, it's streaming-only
+      return allProviders.every((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))
+    }
+    
+    return false
+  } catch (error) {
+    console.error(`[MoviesPage] Error checking streaming status for ${movieId}:`, error)
+    return false // Default to showing in cinemas if check fails
+  }
+}
+
 async function fetchMovies(endpoint: string, apiKey: string) {
   try {
     // Construct URL properly - check if endpoint already has query params
@@ -131,18 +177,33 @@ export default async function MoviesPage() {
     console.log(`[MoviesPage] Raw data: ${nowPlayingData.length} now playing, ${upcomingData.length} upcoming, ${popularData.length} popular`)
     
     // Map movies first, then filter (less restrictive filters)
-    const now = nowPlayingData
-      .map((m: any) => ({
-        id: String(m.id),
-        title: m.title,
-        overview: m.overview,
-        posterUrl: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
-        releaseDate: m.release_date,
-        rating: m.vote_average,
-        language: m.original_language,
-        genres: m.genre_ids || [],
-      }))
-      .filter((m: any) => {
+    // Filter out streaming-only movies from "Now Showing"
+    const nowMapped = nowPlayingData.map((m: any) => ({
+      id: String(m.id),
+      title: m.title,
+      overview: m.overview,
+      posterUrl: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+      releaseDate: m.release_date,
+      rating: m.vote_average,
+      language: m.original_language,
+      genres: m.genre_ids || [],
+    }))
+    
+    // Check which movies are streaming-only (in parallel, but limit concurrent requests)
+    const streamingChecks = await Promise.allSettled(
+      nowMapped.slice(0, 20).map(m => isStreamingOnly(m.id, apiKey))
+    )
+    
+    const now = nowMapped
+      .filter((m: any, index: number) => {
+        // Skip streaming-only movies
+        if (index < streamingChecks.length) {
+          const check = streamingChecks[index]
+          if (check.status === 'fulfilled' && check.value === true) {
+            return false // Exclude streaming-only movies
+          }
+        }
+        
         // Less restrictive: just check if release date exists and is reasonable
         if (!m.releaseDate) return true
         try {
