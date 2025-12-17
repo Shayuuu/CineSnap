@@ -10,12 +10,12 @@ export async function GET(req: NextRequest) {
     let foodItems
     if (category) {
       foodItems = await query<any>(
-        'SELECT * FROM FoodItem WHERE available = TRUE AND category = ? ORDER BY category, name',
+        'SELECT * FROM "FoodItem" WHERE available = TRUE AND category = $1 ORDER BY category, name',
         [category]
       )
     } else {
       foodItems = await query<any>(
-        'SELECT * FROM FoodItem WHERE available = TRUE ORDER BY category, name',
+        'SELECT * FROM "FoodItem" WHERE available = TRUE ORDER BY category, name',
         []
       )
     }
