@@ -16,6 +16,12 @@ export default function HeaderNav() {
           <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 group-hover:w-full transition-all duration-300"></span>
         </Link>
       </motion.div>
+      <motion.div whileHover={{ y: -2 }} whileTap={{ y: 0 }}>
+        <Link href="/portfolio" className="text-white/70 hover:text-white transition-colors whitespace-nowrap relative group">
+          Portfolio
+          <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-purple-400 to-pink-500 group-hover:w-full transition-all duration-300"></span>
+        </Link>
+      </motion.div>
       <div className="hidden lg:block flex-1 max-w-md mx-4">
         <MovieSearch />
       </div>
