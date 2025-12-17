@@ -14,8 +14,11 @@ declare global {
   }
 }
 
-// Initialize Stripe
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '')
+// Initialize Stripe only if key is provided
+const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+const stripePromise = stripeKey && stripeKey.trim() !== '' 
+  ? loadStripe(stripeKey) 
+  : null
 
 type Props = {
   showtimeId: string
@@ -106,10 +109,16 @@ export default function PaymentClient({
 
   const handleStripePayment = async (bookingId: string) => {
     try {
-      const stripeKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
-      if (!stripeKey) {
-        // Development mode: Skip payment
-        console.log('Development mode: Skipping payment, redirecting to ticket')
+      if (!stripePromise) {
+        // Stripe not configured: Skip payment
+        console.log('Stripe not configured: Skipping payment, redirecting to ticket')
+        router.push(`/ticket/${bookingId}`)
+        return
+      }
+      
+      const stripe = await stripePromise
+      if (!stripe) {
+        console.log('Stripe initialization failed: Skipping payment, redirecting to ticket')
         router.push(`/ticket/${bookingId}`)
         return
       }
