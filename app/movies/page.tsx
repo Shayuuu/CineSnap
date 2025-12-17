@@ -38,14 +38,19 @@ const TMDB_BASE = 'https://api.themoviedb.org/3'
 
 async function fetchMovies(endpoint: string, apiKey: string) {
   try {
-    const url = `${TMDB_BASE}${endpoint}&api_key=${apiKey}&language=en-US&page=1`
-    console.log(`[MoviesPage] Fetching from TMDb: ${endpoint}`)
+    // Construct URL properly - check if endpoint already has query params
+    const separator = endpoint.includes('?') ? '&' : '?'
+    const url = `${TMDB_BASE}${endpoint}${separator}api_key=${apiKey}&language=en-US&page=1`
+    
+    console.log(`[MoviesPage] Fetching from TMDb: ${url.substring(0, 80)}...`)
     
     const res = await fetch(url, { 
       next: { revalidate: 3600 }, // Revalidate every hour
       headers: {
         'Accept': 'application/json',
-      }
+      },
+      // Add timeout and better error handling
+      signal: AbortSignal.timeout(10000) // 10 second timeout
     })
     
     if (!res.ok) {
@@ -53,7 +58,7 @@ async function fetchMovies(endpoint: string, apiKey: string) {
       console.error(`[MoviesPage] TMDb API error for ${endpoint}:`, {
         status: res.status,
         statusText: res.statusText,
-        error: errorText
+        error: errorText.substring(0, 200) // Limit error text length
       })
       return []
     }
@@ -61,11 +66,17 @@ async function fetchMovies(endpoint: string, apiKey: string) {
     const data = await res.json()
     const results = data.results || []
     console.log(`[MoviesPage] Successfully fetched ${results.length} movies from ${endpoint}`)
+    
+    // Log first movie for debugging
+    if (results.length > 0) {
+      console.log(`[MoviesPage] Sample movie: ${results[0].title} (ID: ${results[0].id})`)
+    }
+    
     return results
   } catch (error: any) {
     console.error(`[MoviesPage] Error fetching ${endpoint}:`, {
       message: error?.message,
-      stack: error?.stack,
+      name: error?.name,
       cause: error?.cause
     })
     return []
@@ -107,16 +118,10 @@ export default async function MoviesPage() {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
-    // Map and filter movies
+    console.log(`[MoviesPage] Raw data: ${nowPlayingData.length} now playing, ${upcomingData.length} upcoming, ${popularData.length} popular`)
+    
+    // Map movies first, then filter (less restrictive filters)
     const now = nowPlayingData
-      .filter((m: any) => {
-        if (!m.release_date) return true
-        const releaseDate = new Date(m.release_date)
-        releaseDate.setHours(0, 0, 0, 0)
-        const twelveMonthsAgo = new Date(today)
-        twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 12)
-        return releaseDate <= today && releaseDate >= twelveMonthsAgo
-      })
       .map((m: any) => ({
         id: String(m.id),
         title: m.title,
@@ -127,17 +132,26 @@ export default async function MoviesPage() {
         language: m.original_language,
         genres: m.genre_ids || [],
       }))
+      .filter((m: any) => {
+        // Less restrictive: just check if release date exists and is reasonable
+        if (!m.releaseDate) return true
+        try {
+          const releaseDate = new Date(m.releaseDate)
+          if (isNaN(releaseDate.getTime())) return true
+          // Include movies from last 2 years to future
+          const twoYearsAgo = new Date(today)
+          twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2)
+          const oneYearFuture = new Date(today)
+          oneYearFuture.setFullYear(oneYearFuture.getFullYear() + 1)
+          return releaseDate >= twoYearsAgo && releaseDate <= oneYearFuture
+        } catch {
+          return true // Include if date parsing fails
+        }
+      })
       .map(mapMovie)
+      .slice(0, 20) // Limit to 20 movies
 
     const soon = upcomingData
-      .filter((m: any) => {
-        if (!m.release_date) return true
-        const releaseDate = new Date(m.release_date)
-        releaseDate.setHours(0, 0, 0, 0)
-        const sevenDaysAgo = new Date(today)
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-        return releaseDate > sevenDaysAgo
-      })
       .map((m: any) => ({
         id: String(m.id),
         title: m.title,
@@ -148,17 +162,24 @@ export default async function MoviesPage() {
         language: m.original_language,
         genres: m.genre_ids || [],
       }))
+      .filter((m: any) => {
+        // Less restrictive: include upcoming movies
+        if (!m.releaseDate) return true
+        try {
+          const releaseDate = new Date(m.releaseDate)
+          if (isNaN(releaseDate.getTime())) return true
+          // Include movies from today to 6 months in future
+          const sixMonthsFuture = new Date(today)
+          sixMonthsFuture.setMonth(sixMonthsFuture.getMonth() + 6)
+          return releaseDate >= today && releaseDate <= sixMonthsFuture
+        } catch {
+          return true
+        }
+      })
       .map(mapMovie)
+      .slice(0, 20) // Limit to 20 movies
 
     const popular = popularData
-      .filter((m: any) => {
-        if (!m.release_date) return true
-        const releaseDate = new Date(m.release_date)
-        releaseDate.setHours(0, 0, 0, 0)
-        const fiveYearsAgo = new Date(today)
-        fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5)
-        return releaseDate >= fiveYearsAgo && releaseDate <= today
-      })
       .map((m: any) => ({
         id: String(m.id),
         title: m.title,
@@ -169,7 +190,21 @@ export default async function MoviesPage() {
         language: m.original_language,
         genres: m.genre_ids || [],
       }))
+      .filter((m: any) => {
+        // Less restrictive: include popular movies from last 10 years
+        if (!m.releaseDate) return true
+        try {
+          const releaseDate = new Date(m.releaseDate)
+          if (isNaN(releaseDate.getTime())) return true
+          const tenYearsAgo = new Date(today)
+          tenYearsAgo.setFullYear(tenYearsAgo.getFullYear() - 10)
+          return releaseDate >= tenYearsAgo && releaseDate <= today
+        } catch {
+          return true
+        }
+      })
       .map(mapMovie)
+      .slice(0, 20) // Limit to 20 movies
 
     console.log(`[MoviesPage] Fetched ${now.length} now playing, ${soon.length} upcoming, ${popular.length} popular movies`)
 
