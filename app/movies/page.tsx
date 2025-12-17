@@ -65,7 +65,23 @@ export default async function MoviesPage() {
     
     if (!apiKey) {
       console.error('[MoviesPage] No TMDb API key found')
-      return <MoviesExplorer nowPlaying={[]} upcoming={[]} popular={[]} />
+      return (
+        <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6 flex items-center justify-center">
+          <div className="max-w-md mx-auto text-center glass rounded-2xl p-8 border border-white/10">
+            <div className="text-6xl mb-4">🎬</div>
+            <h2 className="text-2xl font-clash font-bold text-white mb-4">Movies Not Available</h2>
+            <p className="text-gray-400 mb-6">
+              TMDb API key is not configured. Please add <code className="bg-white/10 px-2 py-1 rounded">TMDB_API_KEY</code> to your environment variables.
+            </p>
+            <p className="text-sm text-gray-500">
+              Get your free API key from{' '}
+              <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:text-yellow-300 underline">
+                TMDb
+              </a>
+            </p>
+          </div>
+        </div>
+      )
     }
 
     // Fetch directly from TMDb API instead of going through our API routes
@@ -144,10 +160,45 @@ export default async function MoviesPage() {
 
     console.log(`[MoviesPage] Fetched ${now.length} now playing, ${soon.length} upcoming, ${popular.length} popular movies`)
 
+    // Check if all arrays are empty (likely API issue)
+    if (now.length === 0 && soon.length === 0 && popular.length === 0) {
+      return (
+        <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6 flex items-center justify-center">
+          <div className="max-w-md mx-auto text-center glass rounded-2xl p-8 border border-white/10">
+            <div className="text-6xl mb-4">🎬</div>
+            <h2 className="text-2xl font-clash font-bold text-white mb-4">No Movies Found</h2>
+            <p className="text-gray-400 mb-6">
+              Unable to fetch movies from TMDb API. This could be due to:
+            </p>
+            <ul className="text-left text-sm text-gray-500 space-y-2 mb-6">
+              <li>• Invalid or missing TMDB_API_KEY</li>
+              <li>• Network connectivity issues</li>
+              <li>• TMDb API rate limiting</li>
+            </ul>
+            <p className="text-sm text-gray-500">
+              Check your server logs for more details.
+            </p>
+          </div>
+        </div>
+      )
+    }
+
     return <MoviesExplorer nowPlaying={now} upcoming={soon} popular={popular} />
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error loading movies page:', error)
-    // Return empty data on error
-    return <MoviesExplorer nowPlaying={[]} upcoming={[]} popular={[]} />
+    return (
+      <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6 flex items-center justify-center">
+        <div className="max-w-md mx-auto text-center glass rounded-2xl p-8 border border-white/10">
+          <div className="text-6xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-clash font-bold text-white mb-4">Error Loading Movies</h2>
+          <p className="text-gray-400 mb-6">
+            {error?.message || 'An unexpected error occurred while fetching movies.'}
+          </p>
+          <p className="text-sm text-gray-500">
+            Please try refreshing the page or contact support if the issue persists.
+          </p>
+        </div>
+      </div>
+    )
   }
 }
