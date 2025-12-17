@@ -39,6 +39,8 @@ const TMDB_BASE = 'https://api.themoviedb.org/3'
 async function fetchMovies(endpoint: string, apiKey: string) {
   try {
     const url = `${TMDB_BASE}${endpoint}&api_key=${apiKey}&language=en-US&page=1`
+    console.log(`[MoviesPage] Fetching from TMDb: ${endpoint}`)
+    
     const res = await fetch(url, { 
       next: { revalidate: 3600 }, // Revalidate every hour
       headers: {
@@ -47,14 +49,25 @@ async function fetchMovies(endpoint: string, apiKey: string) {
     })
     
     if (!res.ok) {
-      console.error(`TMDb API error for ${endpoint}:`, res.status, res.statusText)
+      const errorText = await res.text().catch(() => 'Unable to read error response')
+      console.error(`[MoviesPage] TMDb API error for ${endpoint}:`, {
+        status: res.status,
+        statusText: res.statusText,
+        error: errorText
+      })
       return []
     }
     
     const data = await res.json()
-    return data.results || []
-  } catch (error) {
-    console.error(`Error fetching ${endpoint}:`, error)
+    const results = data.results || []
+    console.log(`[MoviesPage] Successfully fetched ${results.length} movies from ${endpoint}`)
+    return results
+  } catch (error: any) {
+    console.error(`[MoviesPage] Error fetching ${endpoint}:`, {
+      message: error?.message,
+      stack: error?.stack,
+      cause: error?.cause
+    })
     return []
   }
 }
