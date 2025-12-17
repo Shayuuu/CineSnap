@@ -153,10 +153,10 @@ function LoginForm() {
                 setError(null)
                 setSuccessMessage(null)
               }}
-              className={`flex-1 py-2 rounded-md font-clash font-semibold transition-all ${
+              className={`flex-1 py-2.5 sm:py-2 rounded-md font-clash font-semibold transition-all touch-manipulation min-h-[44px] text-sm sm:text-base ${
                 !isSignup
                   ? 'bg-white text-black'
-                  : 'text-white/70 hover:text-white'
+                  : 'text-white/70 hover:text-white active:text-white'
               }`}
             >
               Sign In
@@ -168,10 +168,10 @@ function LoginForm() {
                 setError(null)
                 setSuccessMessage(null)
               }}
-              className={`flex-1 py-2 rounded-md font-clash font-semibold transition-all ${
+              className={`flex-1 py-2.5 sm:py-2 rounded-md font-clash font-semibold transition-all touch-manipulation min-h-[44px] text-sm sm:text-base ${
                 isSignup
                   ? 'bg-white text-black'
-                  : 'text-white/70 hover:text-white'
+                  : 'text-white/70 hover:text-white active:text-white'
               }`}
             >
               Create Account
