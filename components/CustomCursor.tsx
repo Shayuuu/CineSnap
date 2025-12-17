@@ -1,12 +1,15 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 export default function CustomCursor() {
   const [position, setPosition] = useState({ x: 0, y: 0 })
-  const [trail, setTrail] = useState<Array<{ x: number; y: number; id: string }>>([])
+  const [trail, setTrail] = useState<Array<{ x: number; y: number; id: string; opacity: number }>>([])
   const [mounted, setMounted] = useState(false)
   const [isDesktop, setIsDesktop] = useState(false)
+  const [isHovering, setIsHovering] = useState(false)
+  const cursorRef = useRef<HTMLDivElement>(null)
+  const trailTimeoutRef = useRef<NodeJS.Timeout>()
 
   useEffect(() => {
     setMounted(true)
@@ -14,16 +17,57 @@ export default function CustomCursor() {
 
     if (window.innerWidth < 768) return
 
+    let mouseX = 0
+    let mouseY = 0
+    let cursorX = 0
+    let cursorY = 0
+
     const updateCursor = (e: MouseEvent) => {
-      setPosition({ x: e.clientX, y: e.clientY })
-      
-      setTrail((prev) => {
-        // Use a combination of timestamp and random number to ensure unique IDs
-        const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-        const newTrail = [...prev, { x: e.clientX, y: e.clientY, id: newId }]
-        return newTrail.slice(-5) // Keep last 5 trail points
-      })
+      mouseX = e.clientX
+      mouseY = e.clientY
+
+      // Smooth magnetic effect
+      const updatePosition = () => {
+        const dx = mouseX - cursorX
+        const dy = mouseY - cursorY
+        cursorX += dx * 0.15
+        cursorY += dy * 0.15
+
+        setPosition({ x: cursorX, y: cursorY })
+
+        // Add trail point
+        setTrail((prev) => {
+          const newId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+          const newTrail = [...prev, { x: cursorX, y: cursorY, id: newId, opacity: 0.8 }]
+          
+          // Fade out trail points
+          setTimeout(() => {
+            setTrail((current) => 
+              current.map((point) => 
+                point.id === newId ? { ...point, opacity: 0 } : point
+              )
+            )
+          }, 200)
+
+          return newTrail.slice(-8) // Keep last 8 trail points
+        })
+
+        requestAnimationFrame(updatePosition)
+      }
+
+      updatePosition()
     }
+
+    // Check for hoverable elements
+    const handleMouseEnter = () => setIsHovering(true)
+    const handleMouseLeave = () => setIsHovering(false)
+
+    // Add hover listeners to interactive elements
+    const interactiveElements = document.querySelectorAll('a, button, [role="button"], input, textarea, select')
+    interactiveElements.forEach((el) => {
+      el.addEventListener('mouseenter', handleMouseEnter)
+      el.addEventListener('mouseleave', handleMouseLeave)
+    })
 
     window.addEventListener('mousemove', updateCursor)
     
@@ -35,6 +79,13 @@ export default function CustomCursor() {
     return () => {
       window.removeEventListener('mousemove', updateCursor)
       window.removeEventListener('resize', handleResize)
+      interactiveElements.forEach((el) => {
+        el.removeEventListener('mouseenter', handleMouseEnter)
+        el.removeEventListener('mouseleave', handleMouseLeave)
+      })
+      if (trailTimeoutRef.current) {
+        clearTimeout(trailTimeoutRef.current)
+      }
     }
   }, [])
 
@@ -44,7 +95,8 @@ export default function CustomCursor() {
   return (
     <>
       <div
-        className="custom-cursor"
+        ref={cursorRef}
+        className={`custom-cursor ${isHovering ? 'hover' : ''}`}
         style={{
           left: `${position.x}px`,
           top: `${position.y}px`,
@@ -59,12 +111,11 @@ export default function CustomCursor() {
             left: `${point.x}px`,
             top: `${point.y}px`,
             transform: 'translate(-50%, -50%)',
-            opacity: (i + 1) / trail.length * 0.6,
-            transition: 'opacity 0.3s ease',
+            opacity: point.opacity * (0.3 + (i / trail.length) * 0.4),
+            transition: 'opacity 0.2s ease',
           }}
         />
       ))}
     </>
   )
 }
-

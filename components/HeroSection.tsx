@@ -130,10 +130,14 @@ export default function HeroSection() {
             fpsLimit: 120,
             particles: {
               color: {
-                value: '#ffffff',
+                value: ['#00f9ff', '#ff2d92', '#ffffff'],
               },
               links: {
-                enable: false,
+                enable: true,
+                distance: 150,
+                color: '#00f9ff',
+                opacity: 0.1,
+                width: 1,
               },
               move: {
                 direction: 'none',
@@ -142,23 +146,38 @@ export default function HeroSection() {
                   default: 'bounce',
                 },
                 random: true,
-                speed: 0.5,
+                speed: 0.8,
                 straight: false,
+                attract: {
+                  enable: true,
+                  rotateX: 600,
+                  rotateY: 1200,
+                },
               },
               number: {
                 density: {
                   enable: true,
                 },
-                value: 50,
+                value: 80,
               },
               opacity: {
-                value: 0.15,
+                value: { min: 0.1, max: 0.3 },
+                animation: {
+                  enable: true,
+                  speed: 1,
+                  minimumValue: 0.1,
+                },
               },
               shape: {
-                type: 'circle',
+                type: ['circle', 'triangle'],
               },
               size: {
-                value: { min: 1, max: 3 },
+                value: { min: 1, max: 4 },
+                animation: {
+                  enable: true,
+                  speed: 2,
+                  minimumValue: 0.5,
+                },
               },
             },
             detectRetina: true,
@@ -175,21 +194,24 @@ export default function HeroSection() {
           className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-clash font-bold mb-4 sm:mb-6 px-2 sm:px-4 leading-tight sm:leading-normal relative"
         >
           <motion.span 
-            className="gradient-text-gold break-words relative inline-block"
+            className="break-words relative inline-block bg-gradient-to-r from-cyan-400 via-magenta-400 to-cyan-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1 }}
+            style={{
+              textShadow: '0 0 40px rgba(0, 249, 255, 0.5), 0 0 80px rgba(255, 45, 146, 0.3)',
+            }}
           >
             {typedText}
-            {/* Glow effect */}
-            <span className="absolute inset-0 blur-xl opacity-50 gradient-text-gold -z-10">
+            {/* Neon glow effect */}
+            <span className="absolute inset-0 blur-2xl opacity-60 bg-gradient-to-r from-cyan-400 via-magenta-400 to-cyan-400 bg-clip-text text-transparent -z-10">
               {typedText}
             </span>
           </motion.span>
           {typedText.length < tagline.length && (
             <motion.span 
-              className="inline-block w-0.5 sm:w-1 h-12 sm:h-16 md:h-20 lg:h-24 bg-gradient-to-b from-yellow-400 to-orange-500 ml-1 sm:ml-2 rounded-full"
-              animate={{ opacity: [1, 0.3, 1] }}
+              className="inline-block w-0.5 sm:w-1 h-12 sm:h-16 md:h-20 lg:h-24 bg-gradient-to-b from-cyan-400 via-magenta-400 to-cyan-400 ml-1 sm:ml-2 rounded-full shadow-[0_0_10px_rgba(0,249,255,0.8)]"
+              animate={{ opacity: [1, 0.3, 1], scale: [1, 1.2, 1] }}
               transition={{ duration: 1, repeat: Infinity }}
             />
           )}
@@ -280,7 +302,7 @@ export default function HeroSection() {
             href="/movies"
             whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            className="btn-primary inline-block w-full sm:w-auto px-6 sm:px-6 md:px-8 py-3 sm:py-3 md:py-4 bg-gradient-to-r from-white to-gray-100 text-black rounded-full font-clash font-semibold text-sm sm:text-base md:text-lg hover:from-white hover:to-white transition-all touch-manipulation min-h-[48px] flex items-center justify-center relative overflow-hidden shadow-lg"
+            className="btn-primary inline-block w-full sm:w-auto px-6 sm:px-6 md:px-8 py-3 sm:py-3 md:py-4 bg-gradient-to-r from-cyan-400 via-magenta-400 to-cyan-400 text-white rounded-full font-clash font-semibold text-sm sm:text-base md:text-lg hover:shadow-[0_0_30px_rgba(0,249,255,0.6),0_0_60px_rgba(255,45,146,0.4)] transition-all touch-manipulation min-h-[48px] flex items-center justify-center relative overflow-hidden shadow-lg bg-[length:200%_auto] animate-gradient"
           >
             <span className="relative z-10 flex items-center gap-2">
               Explore Movies
