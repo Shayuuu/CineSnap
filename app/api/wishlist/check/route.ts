@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
 
     let userId = (session.user as any)?.id
     if (!userId && session.user?.email) {
-      const dbUser = await queryOne<any>('SELECT id FROM User WHERE email = ?', [session.user.email])
+      const dbUser = await queryOne<any>('SELECT id FROM "User" WHERE LOWER(email) = $1', [session.user.email.toLowerCase()])
       if (dbUser) userId = dbUser.id
     }
 
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     }
 
     const wishlistItem = await queryOne<any>(
-      'SELECT id FROM Wishlist WHERE userId = ? AND movieId = ?',
+      'SELECT id FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
       [userId, movieId]
     )
 

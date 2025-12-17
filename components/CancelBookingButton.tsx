@@ -46,10 +46,12 @@ export default function CancelBookingButton({ bookingId, startTime, onCancelled 
 
       setIsOpen(false)
       setReason('')
-      onCancelled()
       
       // Show success message
-      alert(`Booking cancelled successfully! Refund of ${data.refundAmount ? `₹${(data.refundAmount / 100).toFixed(2)}` : 'full amount'} has been added to your wallet.`)
+      alert(`Booking cancelled successfully! Refund of ${data.refundAmount ? `₹${(data.refundAmount / 100).toFixed(2)}` : 'full amount'} will be processed.`)
+      
+      // Call the callback to refresh the bookings list
+      onCancelled()
     } catch (err: any) {
       setError(err.message || 'Failed to cancel booking')
     } finally {

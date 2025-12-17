@@ -43,7 +43,7 @@ export default function TicketClient({
           animate={{ opacity: 1, scale: 1 }}
           className="space-y-8"
         >
-          {/* Success Message */}
+          {/* Status Message */}
           <div className="text-center">
             <motion.div
               initial={{ scale: 0 }}
@@ -51,14 +51,32 @@ export default function TicketClient({
               transition={{ delay: 0.2, type: 'spring' }}
               className="inline-block mb-4"
             >
-              <div className="w-20 h-20 rounded-full bg-white/10 border-4 border-white flex items-center justify-center">
-                <span className="text-4xl">✓</span>
+              <div className={`w-20 h-20 rounded-full border-4 flex items-center justify-center ${
+                status === 'CANCELLED' 
+                  ? 'bg-red-500/20 border-red-500' 
+                  : status === 'CONFIRMED'
+                  ? 'bg-green-500/20 border-green-500'
+                  : 'bg-yellow-500/20 border-yellow-500'
+              }`}>
+                <span className="text-4xl">
+                  {status === 'CANCELLED' ? '✕' : status === 'CONFIRMED' ? '✓' : '⏳'}
+                </span>
               </div>
             </motion.div>
             <h1 className="text-4xl md:text-5xl font-clash font-bold text-white mb-2">
-              Booking Confirmed!
+              {status === 'CANCELLED' 
+                ? 'Booking Cancelled' 
+                : status === 'CONFIRMED'
+                ? 'Booking Confirmed!'
+                : 'Booking Pending'}
             </h1>
-            <p className="text-gray-400">Your tickets are ready</p>
+            <p className="text-gray-400">
+              {status === 'CANCELLED' 
+                ? 'This booking has been cancelled' 
+                : status === 'CONFIRMED'
+                ? 'Your tickets are ready'
+                : 'Waiting for payment confirmation'}
+            </p>
           </div>
 
           {/* Ticket Card */}

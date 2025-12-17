@@ -188,7 +188,8 @@ export default function MyBookingsPage() {
                           bookingId={booking.id}
                           startTime={booking.startTime}
                           onCancelled={() => {
-                            setBookings(bookings.filter(b => b.id !== booking.id))
+                            // Refresh bookings list after cancellation
+                            fetchBookings()
                           }}
                         />
                       )}

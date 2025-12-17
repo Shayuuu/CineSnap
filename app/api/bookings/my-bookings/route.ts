@@ -63,7 +63,7 @@ export async function GET(req: NextRequest) {
       }, { status: 401 })
     }
     
-    // Fetch all confirmed bookings for the user (PostgreSQL syntax)
+    // Fetch all bookings for the user (including cancelled) - PostgreSQL syntax
     const bookings = await query<any>(
       `SELECT 
         b.id,
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
       INNER JOIN "Movie" m ON s."movieId" = m.id
       INNER JOIN "Screen" sc ON s."screenId" = sc.id
       INNER JOIN "Theater" t ON sc."theaterId" = t.id
-      WHERE b."userId" = $1 AND b.status = 'CONFIRMED'
+      WHERE b."userId" = $1
       ORDER BY b."createdAt" DESC`,
       [userId]
     )

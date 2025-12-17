@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
     let userId = (session.user as any)?.id
     if (!userId && session.user?.email) {
-      const dbUser = await queryOne<any>('SELECT id FROM User WHERE email = ?', [session.user.email])
+      const dbUser = await queryOne<any>('SELECT id FROM "User" WHERE LOWER(email) = $1', [session.user.email.toLowerCase()])
       if (dbUser) userId = dbUser.id
     }
 
@@ -23,11 +23,11 @@ export async function GET(req: NextRequest) {
     }
 
     const wishlist = await query<any>(
-      `SELECT w.*, m.title as movieTitle, m.posterUrl, m.releaseDate
-       FROM Wishlist w
-       INNER JOIN Movie m ON w.movieId = m.id
-       WHERE w.userId = ?
-       ORDER BY w.createdAt DESC`,
+      `SELECT w.*, m.title as "movieTitle", m."posterUrl", m."releaseDate"
+       FROM "Wishlist" w
+       INNER JOIN "Movie" m ON w."movieId" = m.id
+       WHERE w."userId" = $1
+       ORDER BY w."createdAt" DESC`,
       [userId]
     )
 
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
     let userId = (session.user as any)?.id
     if (!userId && session.user?.email) {
-      const dbUser = await queryOne<any>('SELECT id FROM User WHERE email = ?', [session.user.email])
+      const dbUser = await queryOne<any>('SELECT id FROM "User" WHERE LOWER(email) = $1', [session.user.email.toLowerCase()])
       if (dbUser) userId = dbUser.id
     }
 
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
 
     // Check if already in wishlist
     const existing = await queryOne<any>(
-      'SELECT id FROM Wishlist WHERE userId = ? AND movieId = ?',
+      'SELECT id FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
       [userId, movieId]
     )
 
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
     const wishlistId = randomBytes(16).toString('hex')
     await execute(
-      'INSERT INTO Wishlist (id, userId, movieId) VALUES (?, ?, ?)',
+      'INSERT INTO "Wishlist" (id, "userId", "movieId") VALUES ($1, $2, $3)',
       [wishlistId, userId, movieId]
     )
 
@@ -95,7 +95,7 @@ export async function DELETE(req: NextRequest) {
 
     let userId = (session.user as any)?.id
     if (!userId && session.user?.email) {
-      const dbUser = await queryOne<any>('SELECT id FROM User WHERE email = ?', [session.user.email])
+      const dbUser = await queryOne<any>('SELECT id FROM "User" WHERE LOWER(email) = $1', [session.user.email.toLowerCase()])
       if (dbUser) userId = dbUser.id
     }
 
@@ -111,7 +111,7 @@ export async function DELETE(req: NextRequest) {
     }
 
     await execute(
-      'DELETE FROM Wishlist WHERE userId = ? AND movieId = ?',
+      'DELETE FROM "Wishlist" WHERE "userId" = $1 AND "movieId" = $2',
       [userId, movieId]
     )
 
