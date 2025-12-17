@@ -43,7 +43,12 @@ export default async function OTTPage() {
     hotstar: 350,    // Disney+ Hotstar (correct ID for India region)
   }
 
-  const ottContent: Record<string, OTTContent[]> = {
+  const ottContent: {
+    netflix: OTTContent[]
+    prime: OTTContent[]
+    apple: OTTContent[]
+    hotstar: OTTContent[]
+  } = {
     netflix: [],
     prime: [],
     apple: [],
