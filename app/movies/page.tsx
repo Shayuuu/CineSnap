@@ -189,14 +189,15 @@ export default async function MoviesPage() {
       genres: m.genre_ids || [],
     }))
     
-    // Check which movies are streaming-only (in parallel, but limit concurrent requests)
+    // Check which movies are streaming-only (check first 30 to ensure we have enough after filtering)
+    const moviesToCheck = nowMapped.slice(0, 30)
     const streamingChecks = await Promise.allSettled(
-      nowMapped.slice(0, 20).map(m => isStreamingOnly(m.id, apiKey))
+      moviesToCheck.map(m => isStreamingOnly(m.id, apiKey))
     )
     
     const now = nowMapped
       .filter((m: any, index: number) => {
-        // Skip streaming-only movies
+        // Skip streaming-only movies (only check first 30)
         if (index < streamingChecks.length) {
           const check = streamingChecks[index]
           if (check.status === 'fulfilled' && check.value === true) {
