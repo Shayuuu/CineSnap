@@ -17,12 +17,12 @@ export async function GET(req: NextRequest) {
     try {
       const reviews = await query<any>(
         `SELECT 
-          r.id, r.rating, r.reviewText, r.createdAt, r.updatedAt,
-          u.id as userId, u.name as userName, u.email as userEmail
-        FROM Review r
-        INNER JOIN User u ON r.userId = u.id
-        WHERE r.movieId = ?
-        ORDER BY r.createdAt DESC
+          r.id, r.rating, r."reviewText", r."createdAt", r."updatedAt",
+          u.id as "userId", u.name as "userName", u.email as "userEmail"
+        FROM "Review" r
+        INNER JOIN "User" u ON r."userId" = u.id
+        WHERE r."movieId" = $1
+        ORDER BY r."createdAt" DESC
         LIMIT 50`,
         [movieId]
       )
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
     // If userId not in session, try to get it from email (fallback)
     if (!userId && session.user?.email) {
       console.log('[Reviews API] User ID not in session, looking up by email:', session.user.email)
-      const dbUser = await queryOne<any>('SELECT id FROM User WHERE email = ?', [session.user.email])
+      const dbUser = await queryOne<any>('SELECT id FROM "User" WHERE LOWER(email) = $1', [session.user.email.toLowerCase()])
       if (dbUser) {
         userId = dbUser.id
         console.log('[Reviews API] Found user ID from email:', userId)
@@ -98,14 +98,14 @@ export async function POST(req: NextRequest) {
 
     // Check if user already has a review for this movie
     const existingReview = await queryOne<any>(
-      'SELECT id FROM Review WHERE userId = ? AND movieId = ?',
+      'SELECT id FROM "Review" WHERE "userId" = $1 AND "movieId" = $2',
       [userId, movieId]
     )
 
     if (existingReview) {
       // Update existing review
       await execute(
-        'UPDATE Review SET rating = ?, reviewText = ?, updatedAt = NOW() WHERE id = ?',
+        'UPDATE "Review" SET rating = $1, "reviewText" = $2, "updatedAt" = NOW() WHERE id = $3',
         [rating, reviewText || null, existingReview.id]
       )
       return Response.json({ 
@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
       // Create new review
       const reviewId = randomBytes(16).toString('hex')
       await execute(
-        'INSERT INTO Review (id, movieId, userId, rating, reviewText) VALUES (?, ?, ?, ?, ?)',
+        'INSERT INTO "Review" (id, "movieId", "userId", rating, "reviewText") VALUES ($1, $2, $3, $4, $5)',
         [reviewId, movieId, userId, rating, reviewText || null]
       )
       return Response.json({ 
@@ -158,7 +158,7 @@ export async function DELETE(req: NextRequest) {
 
     // Verify the review belongs to the user
     const review = await queryOne<any>(
-      'SELECT id FROM Review WHERE id = ? AND userId = ?',
+      'SELECT id FROM "Review" WHERE id = $1 AND "userId" = $2',
       [reviewId, userId]
     )
 
@@ -166,7 +166,7 @@ export async function DELETE(req: NextRequest) {
       return Response.json({ error: 'Review not found or unauthorized' }, { status: 404 })
     }
 
-    await execute('DELETE FROM Review WHERE id = ?', [reviewId])
+    await execute('DELETE FROM "Review" WHERE id = $1', [reviewId])
 
     return Response.json({ success: true, message: 'Review deleted successfully' })
   } catch (error: any) {

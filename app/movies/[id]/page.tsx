@@ -149,11 +149,12 @@ export default async function MovieDetailPage({ params }: Props) {
       const STREAMING_PROVIDER_IDS = [8, 9, 2, 337, 350] // Netflix, Prime Video, Apple TV+, Disney+ Hotstar (old & new)
       
       // Check if movie is streaming-only (has ONLY Netflix, Prime, Apple TV+, or Jio Hotstar)
-      // A movie is OTT-only if:
+      // A movie is OTT-only ONLY if:
       // 1. It has watch providers
       // 2. It has at least one of the 4 streaming platforms
       // 3. ALL providers are from the 4 streaming platforms (no other providers)
-      const isOTTMovie = watchProviders && (() => {
+      // Otherwise, show showtimes (it's a cinema movie)
+      const isOTTMovie = watchProviders ? (() => {
         const allProviders = [
           ...(watchProviders.flatrate || []),
           ...(watchProviders.buy || []),
@@ -177,8 +178,9 @@ export default async function MovieDetailPage({ params }: Props) {
         // If there are any non-streaming providers, it's not OTT-only (show showtimes)
         const allAreStreaming = allProviders.every((p: any) => STREAMING_PROVIDER_IDS.includes(p.provider_id))
         
+        // Only return true if ALL providers are streaming-only
         return allAreStreaming
-      })()
+      })() : false // If no watchProviders, definitely not OTT-only
 
   // Debug log
   if (process.env.NODE_ENV === 'development') {
