@@ -150,7 +150,7 @@ export default async function MovieDetailPage({ params }: Props) {
       
       // Check if movie is streaming-only (has ONLY Netflix, Prime, Apple TV+, or Jio Hotstar)
       // A movie is OTT-only ONLY if:
-      // 1. It has watch providers
+      // 1. It has watch providers (not null/undefined)
       // 2. It has at least one of the 4 streaming platforms
       // 3. ALL providers are from the 4 streaming platforms (no other providers)
       // Otherwise, show showtimes (it's a cinema movie)
