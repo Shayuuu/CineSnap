@@ -38,6 +38,19 @@ type Props = {
       provider_id: number
       provider_name: string
       logo_path: string
+      display_priority?: number
+    }>
+    buy?: Array<{
+      provider_id: number
+      provider_name: string
+      logo_path: string
+      display_priority?: number
+    }>
+    rent?: Array<{
+      provider_id: number
+      provider_name: string
+      logo_path: string
+      display_priority?: number
     }>
     link?: string
   } | null
