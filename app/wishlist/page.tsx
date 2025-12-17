@@ -34,16 +34,12 @@ export default function WishlistPage() {
 
   const fetchWishlist = async () => {
     try {
-      const res = await fetch('/api/wishlist')
-      if (res.ok) {
-        const data = await res.json()
-        setWishlist(data.wishlist || [])
-      } else if (res.status === 503) {
-        // Wishlist table doesn't exist - show empty state
-        setWishlist([])
-      } else {
-        console.error('Failed to fetch wishlist:', res.statusText)
-      }
+      const res = await fetch('/api/wishlist', {
+        credentials: 'include',
+      })
+      const data = await res.json()
+      // Always set wishlist, even if empty or error occurred
+      setWishlist(data.wishlist || [])
     } catch (err) {
       console.error('Failed to fetch wishlist:', err)
       // On error, show empty array to prevent UI issues

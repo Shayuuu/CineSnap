@@ -35,18 +35,27 @@ export async function GET(req: NextRequest) {
       return Response.json({ wishlist: wishlist || [] })
     } catch (dbError: any) {
       // If Wishlist table doesn't exist yet, return empty array
-      if (dbError?.message?.includes("doesn't exist") || 
-          dbError?.message?.includes("Unknown table") || 
-          dbError?.message?.includes("relation") ||
-          dbError?.code === '42P01') {
+      const errorMsg = dbError?.message || ''
+      const errorCode = dbError?.code || ''
+      
+      if (errorMsg.includes("doesn't exist") || 
+          errorMsg.includes("Unknown table") || 
+          errorMsg.includes("relation") ||
+          errorMsg.includes("Wishlist") ||
+          errorCode === '42P01' ||
+          errorCode === 'P0001') {
         console.log('Wishlist table does not exist yet. Returning empty array.')
         return Response.json({ wishlist: [] })
       }
+      // Log the actual error for debugging
+      console.error('Wishlist query error:', { message: errorMsg, code: errorCode, error: dbError })
       throw dbError
     }
   } catch (error: any) {
     console.error('Failed to fetch wishlist:', error)
-    return Response.json({ error: 'Failed to fetch wishlist', details: error.message }, { status: 500 })
+    // Always return empty array instead of error to prevent UI issues
+    // This handles cases where database is unavailable or table doesn't exist
+    return Response.json({ wishlist: [] })
   }
 }
 
