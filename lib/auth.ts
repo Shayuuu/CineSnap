@@ -3,26 +3,30 @@ import CredentialsProvider from 'next-auth/providers/credentials'
 import { queryOne, query } from '@/lib/db'
 
 // Get NextAuth secret (lazy evaluation)
-function getNextAuthSecret(): string | undefined {
+function getNextAuthSecret(): string {
   const secret = process.env.NEXTAUTH_SECRET
   if (!secret) {
-    // During build time, allow undefined secret (will use fallback)
-    // In production/runtime, this should be set
-    if (process.env.NODE_ENV === 'production' && typeof window === 'undefined') {
-      console.warn('⚠️ NEXTAUTH_SECRET environment variable is not set!')
-      console.warn('📝 Please add NEXTAUTH_SECRET to your Vercel environment variables')
-      console.warn('📖 Generate one with: openssl rand -base64 32')
-      // Don't throw during build - allow build to complete
-      // The secret will be required at runtime
-      return undefined
+    // During build time, use a temporary secret to allow build to complete
+    if (process.env.NEXT_PHASE === 'phase-production-build') {
+      console.warn('⚠️ NEXTAUTH_SECRET not set during build - using temporary secret')
+      return 'temporary-build-secret-change-in-production'
     }
-    // In development, warn but don't throw during build
-    if (process.env.NEXT_PHASE !== 'phase-production-build') {
-      console.warn('⚠️ NEXTAUTH_SECRET environment variable is not set!')
-      console.warn('📝 Please add NEXTAUTH_SECRET to your .env.local file')
-      console.warn('📖 Generate one with: openssl rand -base64 32')
+    
+    // At runtime, warn and use a fallback (not secure for production)
+    console.warn('⚠️ NEXTAUTH_SECRET environment variable is not set!')
+    console.warn('📝 Please add NEXTAUTH_SECRET to your environment variables')
+    console.warn('📖 Generate one with: openssl rand -base64 32')
+    
+    if (process.env.NODE_ENV === 'production') {
+      console.error('❌ NEXTAUTH_SECRET is required in production!')
+      console.error('🔒 Using fallback secret - THIS IS NOT SECURE!')
+      console.error('⚠️ Sessions will be invalidated on server restart!')
+      // Use a deterministic fallback for production (not secure, but allows app to run)
+      return 'fallback-secret-not-secure-set-nexauth-secret-in-production'
     }
-    return undefined
+    
+    // Development fallback
+    return 'development-secret-not-secure'
   }
   return secret
 }
