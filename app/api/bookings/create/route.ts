@@ -94,11 +94,13 @@ export async function POST(req: NextRequest) {
            WHERE s.id = $1`,
           [showtimeId]
         )
+      // Get formatted seat numbers for email (PostgreSQL syntax)
       const placeholders = seatIds.map((_, i) => `$${i + 1}`).join(',')
       const seats = await query<any>(
-        `SELECT CONCAT("row", "number") as seat FROM "Seat" WHERE id IN (${placeholders})`,
+        `SELECT "row", "number" FROM "Seat" WHERE id IN (${placeholders}) ORDER BY "row", "number"`,
         seatIds
       )
+      const seatNumbers = seats.map((s: any) => `${s.row}${s.number}`)
 
       if (user && showtimeDetails) {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
             theaterName: showtimeDetails.theaterName,
             screenName: showtimeDetails.screenName,
             showtime: showtimeDetails.startTime,
-            seats: seats.map((s: any) => s.seat),
+            seats: seatNumbers,
             totalAmount: total,
             bookingId,
             ticketUrl: `${baseUrl}/ticket/${bookingId}`,
