@@ -322,19 +322,18 @@ export default async function MovieDetailPage({ params }: Props) {
     }
   }
 
-  return (
-    <MovieDetailClient
-      movie={movie}
-      showtimes={isOTTMovie ? [] : showtimes.map((st: any) => ({
-        id: st.id,
-        startTime: st.startTime,
-        price: st.price,
-        screenName: st.screenName,
-        theaterName: st.theaterName,
-        theaterLocation: st.theaterLocation,
-      }))}
-      watchProviders={watchProviders}
-      baseUrl={base}
-    />
-  )
+      return (
+        <MovieDetailClient
+          movie={movie}
+          showtimes={isOTTMovie ? [] : showtimes.map((st: any) => ({
+            id: st.id,
+            startTime: st.startTime,
+            price: st.price,
+            screenName: st.screenName,
+            theaterName: st.theaterName,
+            theaterLocation: st.theaterLocation,
+          }))}
+          watchProviders={watchProviders}
+        />
+      )
 }
