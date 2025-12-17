@@ -29,31 +29,33 @@ export default function MyBookingsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  const fetchBookings = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const res = await fetch('/api/bookings/my-bookings', {
+        credentials: 'include',
+        cache: 'no-store',
+      })
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Failed to fetch bookings')
+      }
+      const data = await res.json()
+      setBookings(data.bookings || [])
+    } catch (err: any) {
+      console.error('Failed to fetch bookings:', err)
+      setError(err.message || 'Failed to load bookings')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (status === 'loading') return
     if (!session) {
       window.location.href = '/login'
       return
-    }
-
-    const fetchBookings = async () => {
-      try {
-        const res = await fetch('/api/bookings/my-bookings', {
-          credentials: 'include',
-          cache: 'no-store',
-        })
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({}))
-          throw new Error(errorData.error || 'Failed to fetch bookings')
-        }
-        const data = await res.json()
-        setBookings(data.bookings || [])
-      } catch (err: any) {
-        console.error('Failed to fetch bookings:', err)
-        setError(err.message || 'Failed to load bookings')
-      } finally {
-        setLoading(false)
-      }
     }
 
     fetchBookings()
