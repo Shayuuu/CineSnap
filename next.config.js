@@ -16,14 +16,6 @@ const nextConfig = {
   },
   // Enable compression
   compress: true,
-  async rewrites() {
-    return [
-      {
-        source: '/manifest.json',
-        destination: '/manifest',
-      },
-    ]
-  },
   // Experimental optimizations
   experimental: {
     optimizePackageImports: ['framer-motion', '@tsparticles/react'],
