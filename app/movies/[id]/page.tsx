@@ -182,8 +182,10 @@ export default async function MovieDetailPage({ params }: Props) {
 
   // Debug log
   if (process.env.NODE_ENV === 'development') {
-    console.log('[Movie Detail] Watch Providers:', watchProviders)
+    console.log('[Movie Detail] Watch Providers:', JSON.stringify(watchProviders, null, 2))
     console.log('[Movie Detail] Is OTT Movie:', isOTTMovie)
+    console.log('[Movie Detail] Movie ID:', id)
+    console.log('[Movie Detail] Movie Title:', movie?.title)
   }
 
   // Get showtimes from database (only if not an OTT movie)
