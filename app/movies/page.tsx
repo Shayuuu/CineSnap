@@ -44,14 +44,18 @@ async function fetchMovies(endpoint: string, apiKey: string) {
     
     console.log(`[MoviesPage] Fetching from TMDb: ${url.substring(0, 80)}...`)
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+    
     const res = await fetch(url, { 
       next: { revalidate: 3600 }, // Revalidate every hour
       headers: {
         'Accept': 'application/json',
       },
-      // Add timeout and better error handling
-      signal: AbortSignal.timeout(10000) // 10 second timeout
+      signal: controller.signal
     })
+    
+    clearTimeout(timeoutId)
     
     if (!res.ok) {
       const errorText = await res.text().catch(() => 'Unable to read error response')
@@ -87,6 +91,9 @@ export default async function MoviesPage() {
   try {
     const apiKey = getTmdbApiKey()
     
+    // Log API key status (without exposing the actual key)
+    console.log(`[MoviesPage] API key present: ${!!apiKey}, length: ${apiKey?.length || 0}`)
+    
     if (!apiKey) {
       console.error('[MoviesPage] No TMDb API key found')
       return (
@@ -97,11 +104,14 @@ export default async function MoviesPage() {
             <p className="text-gray-400 mb-6">
               TMDb API key is not configured. Please add <code className="bg-white/10 px-2 py-1 rounded">TMDB_API_KEY</code> to your environment variables.
             </p>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 mb-4">
               Get your free API key from{' '}
               <a href="https://www.themoviedb.org/settings/api" target="_blank" rel="noopener noreferrer" className="text-yellow-400 hover:text-yellow-300 underline">
                 TMDb
               </a>
+            </p>
+            <p className="text-xs text-gray-600">
+              Environment: {process.env.NODE_ENV || 'unknown'}
             </p>
           </div>
         </div>
