@@ -212,7 +212,7 @@ export default function ReviewSection({ movieId }: Props) {
                 <label className="block text-sm font-medium text-gray-300 mb-2">
                   Your Rating
                 </label>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       key={star}
@@ -220,17 +220,22 @@ export default function ReviewSection({ movieId }: Props) {
                       onClick={() => setRating(star)}
                       onMouseEnter={() => setHoverRating(star)}
                       onMouseLeave={() => setHoverRating(0)}
-                      className={`text-3xl transition-all ${
-                        star <= (hoverRating || rating)
+                      className={`
+                        text-3xl sm:text-4xl transition-all touch-manipulation
+                        min-w-[44px] min-h-[44px] flex items-center justify-center
+                        active:scale-95
+                        ${star <= (hoverRating || rating)
                           ? 'text-yellow-400 scale-110'
                           : 'text-gray-600 hover:text-gray-400'
-                      }`}
+                        }
+                      `}
+                      aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
                     >
                       ★
                     </button>
                   ))}
                   {rating > 0 && (
-                    <span className="text-white/70 text-sm ml-2">
+                    <span className="text-white/70 text-sm sm:text-base ml-2">
                       {rating} {rating === 1 ? 'star' : 'stars'}
                     </span>
                   )}
@@ -246,7 +251,7 @@ export default function ReviewSection({ movieId }: Props) {
                   onChange={(e) => setReviewText(e.target.value)}
                   placeholder="Share your thoughts about this movie..."
                   rows={4}
-                  className="w-full px-4 py-3 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white resize-none"
+                  className="w-full px-4 py-3 sm:py-4 rounded-lg glass border border-white/10 focus:border-white/30 focus:outline-none focus:ring-2 focus:ring-white/20 transition-all bg-black/20 text-white resize-none text-sm sm:text-base"
                   disabled={submitting}
                 />
               </div>
@@ -268,7 +273,7 @@ export default function ReviewSection({ movieId }: Props) {
                     setError(null)
                   }}
                   disabled={submitting}
-                  className="px-6 py-2 glass rounded-full font-clash font-semibold text-sm text-white/70 hover:text-white transition-colors disabled:opacity-50"
+                  className="px-4 sm:px-6 py-2 sm:py-2.5 glass rounded-full font-clash font-semibold text-xs sm:text-sm text-white/70 hover:text-white transition-colors disabled:opacity-50 touch-manipulation min-h-[44px]"
                 >
                   Cancel
                 </motion.button>

@@ -700,7 +700,7 @@ export default function MovieDetailClient({ movie, showtimes = [], watchProvider
                                             transition={{ delay: dateIndex * 0.1 + theaterIndex * 0.05 + screenIndex * 0.03 + showIndex * 0.02 }}
                                             whileHover={{ scale: 1.05, y: -3 }}
                                             whileTap={{ scale: 0.95 }}
-                                            className="group relative min-w-[80px] sm:min-w-[90px]"
+                                            className="group relative min-w-[85px] sm:min-w-[90px] min-h-[70px] sm:min-h-[80px]"
                                           >
                                             <div className={`
                                               px-3 sm:px-4 py-2.5 sm:py-3 
@@ -711,22 +711,23 @@ export default function MovieDetailClient({ movie, showtimes = [], watchProvider
                                               transition-all duration-300
                                               relative overflow-hidden
                                               shadow-lg hover:shadow-xl hover:shadow-purple-500/20
+                                              w-full h-full
                                             `}>
                                               <div className={`absolute inset-0 ${gradientStyle.accent} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                                               
-                                              <div className="relative z-10 text-center">
+                                              <div className="relative z-10 text-center flex flex-col items-center justify-center h-full">
                                                 <motion.div 
-                                                  className="text-sm sm:text-base mb-1 opacity-70 group-hover:opacity-100 transition-opacity"
+                                                  className="text-base sm:text-lg mb-1 opacity-70 group-hover:opacity-100 transition-opacity"
                                                   animate={{ scale: [1, 1.1, 1] }}
                                                   transition={{ duration: 2, repeat: Infinity }}
                                                 >
                                                   {gradientStyle.icon}
                                                 </motion.div>
-                                                <p className="text-xs sm:text-sm font-clash font-bold text-white group-hover:text-yellow-300 transition-colors mb-0.5">
+                                                <p className="text-sm sm:text-base font-clash font-bold text-white group-hover:text-yellow-300 transition-colors mb-0.5">
                                                   {formatTime(show.startTime)}
                                                 </p>
-                                                <span className="text-[9px] sm:text-[10px] text-gray-400 group-hover:text-white/90 transition-colors font-medium">
+                                                <span className="text-[10px] sm:text-xs text-gray-400 group-hover:text-white/90 transition-colors font-medium">
                                                   ₹{show.price ? (show.price / 100) : 0}
                                                 </span>
                                               </div>

@@ -184,14 +184,16 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
                   <>
                     <button
                       onClick={() => removeFromCart(item.id)}
-                      className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white touch-manipulation text-lg sm:text-base"
+                      className="w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 flex items-center justify-center text-white touch-manipulation text-lg sm:text-base min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px]"
+                      aria-label="Decrease quantity"
                     >
                       -
                     </button>
-                    <span className="text-white font-semibold w-8 text-center text-sm sm:text-base">{cart[item.id]}</span>
+                    <span className="text-white font-semibold w-10 sm:w-8 text-center text-base sm:text-base min-w-[44px] sm:min-w-[32px]">{cart[item.id]}</span>
                     <button
                       onClick={() => addToCart(item.id)}
-                      className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white touch-manipulation text-lg sm:text-base"
+                      className="w-10 h-10 sm:w-9 sm:h-9 rounded-full bg-white/10 hover:bg-white/20 active:bg-white/30 flex items-center justify-center text-white touch-manipulation text-lg sm:text-base min-w-[44px] min-h-[44px] sm:min-w-[36px] sm:min-h-[36px]"
+                      aria-label="Increase quantity"
                     >
                       +
                     </button>
@@ -199,7 +201,7 @@ export default function FoodOrdering({ bookingId, onOrderComplete }: Props) {
                 ) : (
                   <button
                     onClick={() => addToCart(item.id)}
-                    className="px-3 sm:px-4 py-2 bg-white text-black rounded-lg font-semibold text-xs sm:text-sm hover:bg-white/90 transition-colors touch-manipulation min-h-[36px] sm:min-h-[40px]"
+                    className="px-4 sm:px-4 py-2.5 sm:py-2 bg-white text-black rounded-lg font-semibold text-sm sm:text-sm hover:bg-white/90 active:bg-white/80 transition-colors touch-manipulation min-h-[44px] sm:min-h-[40px]"
                   >
                     Add
                   </button>

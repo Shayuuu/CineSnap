@@ -381,14 +381,15 @@ export default function BookMyShowSeatMap({
                                 } : {}}
                                 whileTap={!isBooked && !isLocked ? { scale: 0.9 } : {}}
                                 className={`
-                                  relative transition-all duration-200
+                                  relative transition-all duration-200 touch-manipulation
                                   ${!isBooked && !isLocked ? 'cursor-pointer' : 'cursor-not-allowed'}
                                   disabled:opacity-50
                                   ${isSelected ? 'shadow-2xl shadow-green-500/60 ring-2 ring-green-400 ring-offset-2 ring-offset-gray-900' : ''}
-                                  ${isVip ? 'w-12 h-10 sm:w-14 sm:h-12 md:w-16 md:h-14' : isPremium ? 'w-10 h-9 sm:w-11 sm:h-10 md:w-13 md:h-11' : 'w-9 h-8 sm:w-10 sm:h-9 md:w-12 md:h-10'}
+                                  ${isVip ? 'w-11 h-10 sm:w-14 sm:h-12 md:w-16 md:h-14 min-w-[44px] min-h-[44px]' : isPremium ? 'w-10 h-9 sm:w-11 sm:h-10 md:w-13 md:h-11 min-w-[40px] min-h-[36px]' : 'w-9 h-8 sm:w-10 sm:h-9 md:w-12 md:h-10 min-w-[36px] min-h-[32px]'}
                                   transform-gpu
                                 `}
                                 title={`${seat.row}${seat.number} - ${isBooked ? 'Sold' : isLocked ? 'Locked' : isSelected ? 'Selected' : 'Available'} - ₹${getSeatPrice(seat.type, pricePerSeat)}`}
+                                aria-label={`Seat ${seat.row}${seat.number}${isBooked ? ' - Sold' : isLocked ? ' - Locked' : isSelected ? ' - Selected' : ' - Available'} - ₹${getSeatPrice(seat.type, pricePerSeat)}`}
                               >
                               {/* Enhanced 3D Seat Design with Glow */}
                               <div className={`
