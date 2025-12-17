@@ -1,119 +1,89 @@
-# 🚀 Quick Start Guide - CineSnap
+# Quick Start Guide - Neon PostgreSQL Setup
 
-Get your app running in 5 minutes!
+Your Neon database is already connected! Here's what to do next:
 
----
+## ✅ Current Status
 
-## 📋 Prerequisites
+- ✅ Database connection: **Connected**
+- ✅ Tables created: **15 tables**
+- ⚠️  Sample data: **Not seeded yet**
 
-- Node.js 18+ installed
-- Supabase account (free tier works)
-- TMDb API key (free)
+## 🚀 Next Steps
 
----
+### 1. Seed Sample Data (Optional but Recommended)
 
-## ⚡ Quick Setup
-
-### Step 1: Install Dependencies
+Run this to create sample theaters, screens, and seats:
 
 ```bash
-cd textbookmyseat
-npm install
+npm run seed-db
 ```
 
-### Step 2: Set Up Environment Variables
+This will create:
+- 5 theaters (PVR, INOX, Cinepolis in Mumbai, Delhi, Bangalore)
+- 15 screens (3 per theater)
+- ~1,500 seats (VIP, Premium, Standard)
+- 6 food items
 
-1. **Copy the example file**:
-   ```bash
-   cp .env.example .env.local
-   ```
+### 2. Test Database Connection
 
-2. **Edit `.env.local`** and add your values:
+```bash
+npm run test-db
+```
 
-   **Required**:
-   ```env
-   # Get from Supabase Dashboard → Settings → Database → Connection string → URI
-   DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres?sslmode=require
-   
-   # Generate with: openssl rand -base64 32
-   NEXTAUTH_SECRET=your-random-secret-key-here
-   
-   NEXTAUTH_URL=http://localhost:3000
-   
-   # Get from: https://www.themoviedb.org/settings/api
-   TMDB_API_KEY=your-tmdb-api-key
-   
-   NEXT_PUBLIC_BASE_URL=http://localhost:3000
-   ```
-
-### Step 3: Set Up Supabase Database
-
-1. **Create Supabase Project**:
-   - Go to https://supabase.com
-   - Create new project
-   - Wait for setup (1-2 minutes)
-
-2. **Get Connection String**:
-   - Go to Settings → Database
-   - Copy the "URI" connection string
-   - Replace `[YOUR-PASSWORD]` with your database password
-   - Add `?sslmode=require` at the end
-
-3. **Run Database Setup**:
-   - Go to SQL Editor in Supabase
-   - Open `supabase-complete-setup.sql`
-   - Copy entire file
-   - Paste into SQL Editor
-   - Click "Run"
-
-### Step 4: Run the App
+### 3. Start Development Server
 
 ```bash
 npm run dev
 ```
 
-Visit: http://localhost:3000
+## 📝 Environment Variables
 
----
+Your `.env.local` file should contain:
 
-## ✅ Verify Setup
+```env
+DATABASE_URL=postgresql://neondb_owner:npg_rWQJG46OfCdw@ep-weathered-poetry-ad2sytyw-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+```
 
-1. **Homepage loads** ✅
-2. **Movies page shows movies** ✅
-3. **Can create account** ✅
-4. **Can login** ✅
+## 🔧 Additional Setup
 
----
+### Add Other Environment Variables
+
+Create or update `.env.local` with:
+
+```env
+# Database (already set)
+DATABASE_URL=postgresql://neondb_owner:npg_rWQJG46OfCdw@ep-weathered-poetry-ad2sytyw-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+# NextAuth (required)
+NEXTAUTH_SECRET=your-secret-here
+NEXTAUTH_URL=http://localhost:3000
+
+# TMDb API (required)
+TMDB_API_KEY=your-tmdb-api-key
+
+# Redis Upstash (optional)
+UPSTASH_REDIS_URL=https://your-redis.upstash.io
+UPSTASH_REDIS_TOKEN=your-redis-token
+```
+
+### Generate NEXTAUTH_SECRET
+
+```bash
+openssl rand -base64 32
+```
+
+## 🎬 Ready to Deploy?
+
+1. **Seed the database**: `npm run seed-db`
+2. **Test locally**: `npm run dev`
+3. **Deploy to Vercel**: Follow `DEPLOYMENT.md`
+
+## 📚 Database Schema
+
+All tables are created. View schema in `neon-schema.sql`
 
 ## 🆘 Troubleshooting
 
-### "DATABASE_URL is not set"
-- Make sure `.env.local` exists
-- Check file name is exactly `.env.local` (not `.env.local.txt`)
-- Restart your dev server after creating `.env.local`
-
-### "Invalid DATABASE_URL format"
-- Make sure connection string starts with `postgresql://`
-- Include `?sslmode=require` at the end
-- Check password doesn't have special characters (URL encode if needed)
-
-### Database connection errors
-- Verify Supabase project is active
-- Check connection string is correct
-- Make sure database password is correct
-
----
-
-## 📚 Next Steps
-
-- Deploy to Vercel: See `VERCEL_DEPLOYMENT.md`
-- Set up payments: Add Stripe/Razorpay keys
-- Configure email: Add SMTP credentials
-
----
-
-**Need help?** Check the detailed guides:
-- `SUPABASE_SETUP.md` - Complete Supabase setup
-- `VERCEL_DEPLOYMENT.md` - Deployment guide
-
-
+- **Connection issues**: Check `DATABASE_URL` in `.env.local`
+- **No data**: Run `npm run seed-db`
+- **Tables missing**: Run `npm run setup-db`

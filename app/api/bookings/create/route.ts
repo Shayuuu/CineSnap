@@ -6,16 +6,24 @@ import { sendEmail, getBookingConfirmationEmail } from '@/lib/email'
 
 export async function POST(req: NextRequest) {
   try {
-    const { showtimeId, seatIds, userId } = await req.json()
+    const { showtimeId, seatIds, userId, seatPrices } = await req.json()
 
     const showtime = await queryOne<any>(
-      'SELECT * FROM Showtime WHERE id = ?',
+      'SELECT * FROM "Showtime" WHERE id = $1',
       [showtimeId]
     )
 
     if (!showtime) return Response.json({ error: 'Showtime not found' }, { status: 404 })
 
-    const total = showtime.price * seatIds.length
+    // Calculate total based on actual seat prices if provided, otherwise use showtime price
+    let total: number
+    if (seatPrices && Array.isArray(seatPrices) && seatPrices.length === seatIds.length) {
+      // Convert seat prices from rupees to paise and sum them
+      total = seatPrices.reduce((sum: number, price: number) => sum + Math.round(price * 100), 0)
+    } else {
+      // Fallback: use showtime price (already in paise) multiplied by seat count
+      total = showtime.price * seatIds.length
+    }
     
     // Calculate loyalty points (1 point per ₹10 spent)
     const loyaltyPointsEarned = Math.floor(total / 10)
@@ -39,117 +47,56 @@ export async function POST(req: NextRequest) {
     // Ensure user exists (demo or real)
     const demoEmail = `${userId}@demo.cinesnap`
     await execute(
-      'INSERT INTO User (id, email, name, role) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE id=id',
+      'INSERT INTO "User" (id, email, name, role) VALUES ($1, $2, $3, $4) ON CONFLICT (id) DO UPDATE SET id = EXCLUDED.id',
       [userId, demoEmail, 'Demo User', 'USER']
     )
 
     const bookingId = randomBytes(16).toString('hex')
     
-    // In showcase mode, use execute directly instead of transactions
-    const { IS_SHOWCASE_MODE } = await import('@/lib/mockDb')
-    
-    if (IS_SHOWCASE_MODE) {
-      // Create booking directly (no transaction needed in showcase mode)
-      await execute(
-        'INSERT INTO Booking (id, userId, showtimeId, totalAmount, razorpayOrderId, loyaltyPointsEarned, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
+    // Use transactions for data consistency
+    const connection = await getConnection()
+
+    try {
+      await connection.query('BEGIN')
+
+      // Create booking (CONFIRMED in dev / mock order)
+      await connection.query(
+        'INSERT INTO "Booking" (id, "userId", "showtimeId", "totalAmount", "razorpayOrderId", "loyaltyPointsEarned", status, "createdAt") VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())',
         [bookingId, userId, showtimeId, total, orderId, loyaltyPointsEarned, 'CONFIRMED']
       )
 
       // Link seats to booking
       for (const seatId of seatIds) {
-        await execute(
-          'INSERT INTO _BookingSeats (A, B) VALUES (?, ?)',
+        await connection.query(
+          'INSERT INTO "_BookingSeats" ("A", "B") VALUES ($1, $2)',
           [bookingId, seatId]
         )
       }
-    } else {
-      // Production mode: use transactions
-      const connection = await getConnection()
 
-      try {
-        await connection.beginTransaction()
-
-        // Create booking (CONFIRMED in dev / mock order)
-        await connection.execute(
-          'INSERT INTO Booking (id, userId, showtimeId, totalAmount, razorpayOrderId, loyaltyPointsEarned, status, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())',
-          [bookingId, userId, showtimeId, total, orderId, loyaltyPointsEarned, 'CONFIRMED']
-        )
-
-        // Award loyalty points
-        if (loyaltyPointsEarned > 0) {
-          // Get or create loyalty record
-          const [loyaltyRows] = await connection.execute(
-            'SELECT * FROM LoyaltyPoints WHERE userId = ?',
-            [userId]
-          )
-          const loyalty = (loyaltyRows as any[])[0]
-
-          if (!loyalty) {
-            const loyaltyId = randomBytes(16).toString('hex')
-            await connection.execute(
-              'INSERT INTO LoyaltyPoints (id, userId, points, totalEarned, tier) VALUES (?, ?, ?, ?, ?)',
-              [loyaltyId, userId, loyaltyPointsEarned, loyaltyPointsEarned, 'BRONZE']
-            )
-          } else {
-            const newTotal = loyalty.totalEarned + loyaltyPointsEarned
-            const newPoints = loyalty.points + loyaltyPointsEarned
-            
-            // Calculate tier
-            const tier = newTotal >= 10000
-              ? 'PLATINUM'
-              : newTotal >= 5000
-              ? 'GOLD'
-              : newTotal >= 2000
-              ? 'SILVER'
-              : 'BRONZE'
-
-            await connection.execute(
-              'UPDATE LoyaltyPoints SET points = ?, totalEarned = ?, tier = ? WHERE userId = ?',
-              [newPoints, newTotal, tier, userId]
-            )
-
-            // Add to history
-            const historyId = randomBytes(16).toString('hex')
-            await connection.execute(
-              'INSERT INTO LoyaltyPointsHistory (id, userId, points, type, description, bookingId) VALUES (?, ?, ?, ?, ?, ?)',
-              [historyId, userId, loyaltyPointsEarned, 'EARNED', `Earned from booking ${bookingId.slice(0, 8)}`, bookingId]
-            )
-          }
-        }
-
-        // Link seats to booking
-        for (const seatId of seatIds) {
-          await connection.execute(
-            'INSERT INTO _BookingSeats (A, B) VALUES (?, ?)',
-            [bookingId, seatId]
-          )
-        }
-
-        await connection.commit()
-      } catch (error) {
-        await connection.rollback()
-        throw error
-      } finally {
-        connection.release()
-      }
+      await connection.query('COMMIT')
+    } catch (error) {
+      await connection.query('ROLLBACK')
+      throw error
+    } finally {
+      connection.release()
     }
 
     // Send confirmation email (async, don't wait)
     try {
-      const user = await queryOne<any>('SELECT email, name FROM User WHERE id = ?', [userId])
+      const user = await queryOne<any>('SELECT email, name FROM "User" WHERE id = $1', [userId])
         const showtimeDetails = await queryOne<any>(
-          `SELECT s.startTime, m.title as movieTitle, m.posterUrl, 
-           t.name as theaterName, sc.name as screenName
-           FROM Showtime s
-           INNER JOIN Movie m ON s.movieId = m.id
-           INNER JOIN Screen sc ON s.screenId = sc.id
-           INNER JOIN Theater t ON sc.theaterId = t.id
-           WHERE s.id = ?`,
+          `SELECT s."startTime", m.title as "movieTitle", m."posterUrl", 
+           t.name as "theaterName", sc.name as "screenName"
+           FROM "Showtime" s
+           INNER JOIN "Movie" m ON s."movieId" = m.id
+           INNER JOIN "Screen" sc ON s."screenId" = sc.id
+           INNER JOIN "Theater" t ON sc."theaterId" = t.id
+           WHERE s.id = $1`,
           [showtimeId]
         )
-      const placeholders = seatIds.map(() => '?').join(',')
+      const placeholders = seatIds.map((_, i) => `$${i + 1}`).join(',')
       const seats = await query<any>(
-        `SELECT CONCAT(\`row\`, \`number\`) as seat FROM Seat WHERE id IN (${placeholders})`,
+        `SELECT CONCAT("row", "number") as seat FROM "Seat" WHERE id IN (${placeholders})`,
         seatIds
       )
 

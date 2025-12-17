@@ -1,6 +1,10 @@
 import { getTmdbApiKey } from './config'
 
-export const API_KEY = getTmdbApiKey()
+// Lazy getter for API key (only called when needed)
+export function getApiKey(): string {
+  return getTmdbApiKey()
+}
+
 export const IMG_BASE = 'https://image.tmdb.org/t/p/w500'
 
 export async function getJSON(url: string) {

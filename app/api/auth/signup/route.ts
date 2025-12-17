@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     // Check if user already exists (case-insensitive)
     const existingUser = await queryOne<any>(
-      'SELECT id FROM User WHERE LOWER(email) = ?',
+      'SELECT id FROM "User" WHERE LOWER(email) = $1',
       [normalizedEmail]
     )
 
@@ -29,16 +29,13 @@ export async function POST(req: NextRequest) {
 
     // Create new user with normalized email
     const userId = randomBytes(16).toString('hex')
-    await execute(
-      'INSERT INTO User (id, email, name, role) VALUES (?, ?, ?, ?)',
-      [userId, normalizedEmail, name || null, 'USER']
-    )
     
-    console.log(`[Signup] User created: ${normalizedEmail} (ID: ${userId})`)
-
-    // In a real app, you would hash the password and store it
-    // For now, we'll just create the user and they can login with any password (dev mode)
-    // The NextAuth authorize function will handle authentication
+    // Store password (plain text for development - use bcrypt.hash in production)
+    await execute(
+      'INSERT INTO "User" (id, email, name, role, password) VALUES ($1, $2, $3, $4, $5)',
+      [userId, normalizedEmail, name || null, 'USER', password]
+    )
+    console.log(`[Signup] User created with password: ${normalizedEmail} (ID: ${userId})`)
 
     return Response.json({
       success: true,
@@ -47,8 +44,19 @@ export async function POST(req: NextRequest) {
     })
   } catch (error: any) {
     console.error('Signup error:', error)
+    console.error('Error details:', {
+      message: error?.message,
+      code: error?.code,
+      detail: error?.detail,
+      hint: error?.hint,
+      stack: error?.stack
+    })
     return Response.json(
-      { error: 'Failed to create account', details: error?.message },
+      { 
+        error: 'Failed to create account', 
+        details: error?.message,
+        hint: error?.hint || 'Check if DATABASE_URL is set and schema is run'
+      },
       { status: 500 }
     )
   }

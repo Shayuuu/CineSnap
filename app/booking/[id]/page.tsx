@@ -1,73 +1,24 @@
 import { notFound } from 'next/navigation'
 import { formatDateTime } from '@/lib/dateUtils'
 import BookingClient from './BookingClient'
-import { MOCK_THEATERS, getTheaterByScreenId, getSeatsForScreen } from '@/lib/mockData'
+import { queryOne, query } from '@/lib/db'
 import { getTmdbApiKey } from '@/lib/config'
 
 type Props = { params: Promise<{ id: string }> }
 
-// Parse showtime ID to extract movie ID, screen index, and slot index
-function parseShowtimeId(showtimeId: string) {
-  // Format: showtime-{movieId}-{screenIndex}-{slotIndex}
-  const parts = showtimeId.split('-')
-  if (parts.length < 4) return null
-  
-  return {
-    movieId: parts[1],
-    screenIndex: parseInt(parts[2]),
-    slotIndex: parseInt(parts[3]),
-  }
-}
-
-// Generate showtime data from ID
-function getShowtimeFromId(showtimeId: string) {
-  const parsed = parseShowtimeId(showtimeId)
-  if (!parsed) return null
-  
-  const slots = ['10:00', '13:00', '16:00', '19:00', '22:00']
-  const allScreens: Array<{ id: string; name: string; theaterId: string }> = []
-  MOCK_THEATERS.forEach(theater => {
-    theater.screens.forEach(screen => {
-      allScreens.push({
-        id: screen.id,
-        name: screen.name,
-        theaterId: theater.id,
-      })
-    })
-  })
-  
-  if (parsed.screenIndex >= allScreens.length || parsed.slotIndex >= slots.length) {
-    return null
-  }
-  
-  const screen = allScreens[parsed.screenIndex]
-  const slot = slots[parsed.slotIndex]
-  const [hours, minutes] = slot.split(':')
-  const startTimeDate = new Date()
-  startTimeDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
-  if (startTimeDate < new Date()) {
-    startTimeDate.setDate(startTimeDate.getDate() + 1)
-  }
-  
-  const theaterData = getTheaterByScreenId(screen.id)
-  
-  return {
-    id: showtimeId,
-    movieId: parsed.movieId,
-    screenId: screen.id,
-    startTime: startTimeDate.toISOString(),
-    price: 45000 + Math.floor(Math.random() * 15000),
-    screenName: screen.name,
-    theaterId: theaterData?.theater.id || MOCK_THEATERS[0].id,
-    theaterName: theaterData?.theater.name || MOCK_THEATERS[0].name,
-  }
-}
-
 export default async function BookingPage({ params }: Props) {
   const { id } = await params
   
-  // Get showtime from hardcoded data
-  const showtime = getShowtimeFromId(id)
+  // Get showtime from database
+  const showtime = await queryOne<any>(
+    `SELECT s.*, sc.name as "screenName", t.name as "theaterName", t.location as "theaterLocation"
+     FROM "Showtime" s
+     INNER JOIN "Screen" sc ON s."screenId" = sc.id
+     INNER JOIN "Theater" t ON sc."theaterId" = t.id
+     WHERE s.id = $1`,
+    [id]
+  )
+  
   if (!showtime) return notFound()
 
   // Fetch movie from TMDb API
@@ -93,15 +44,33 @@ export default async function BookingPage({ params }: Props) {
 
   if (!movie) return notFound()
 
-  // Get seats from hardcoded data
-  const seats = getSeatsForScreen(showtime.screenId) || []
+  // Get seats, locked seats, and booked seats in parallel for faster loading
+  const [seatsResult, lockedSeatsResult, bookedSeatsResult] = await Promise.all([
+    query<any>(
+      `SELECT id, "row", "number", type
+       FROM "Seat"
+       WHERE "screenId" = $1
+       ORDER BY "row", "number"`,
+      [showtime.screenId]
+    ),
+    query<any>(
+      `SELECT "seatId"
+       FROM "SeatLock"
+       WHERE "showtimeId" = $1 AND "expiresAt" > NOW()`,
+      [id]
+    ),
+    query<any>(
+      `SELECT bs."B" as "seatId"
+       FROM "_BookingSeats" bs
+       INNER JOIN "Booking" b ON bs."A" = b.id
+       WHERE b."showtimeId" = $1 AND b.status = 'CONFIRMED'`,
+      [id]
+    )
+  ])
   
-  // No locked or booked seats in showcase mode
-  const locked: string[] = []
-  const booked: string[] = []
-
-  // Check if we're in showcase mode
-  const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
+  const seats = seatsResult
+  const locked = lockedSeatsResult.map((s: any) => s.seatId)
+  const booked = bookedSeatsResult.map((s: any) => s.seatId)
 
   return (
     <BookingClient
@@ -114,7 +83,6 @@ export default async function BookingPage({ params }: Props) {
       screenName={showtime.screenName}
       showtime={formatDateTime(showtime.startTime)}
       pricePerSeat={showtime.price / 100}
-      isShowcaseMode={isShowcaseMode}
     />
   )
 }

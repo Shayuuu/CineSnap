@@ -133,7 +133,14 @@ export default function BookMyShowSeatMap({
       colors: ['#ffffff', '#a0a0a0', '#ffffff'],
     })
     
-    window.location.href = `/payment/${showtimeId}?seats=${selected.join(',')}&userId=${userId}`
+    // Calculate prices for each selected seat
+    const seatPrices = selected.map(seatId => {
+      const seat = seats.find(s => s && s.id === seatId)
+      return seat ? getSeatPrice(seat.type, pricePerSeat) : pricePerSeat
+    })
+    const pricesParam = seatPrices.join(',')
+    
+    window.location.href = `/payment/${showtimeId}?seats=${selected.join(',')}&prices=${pricesParam}&userId=${userId}`
   }
 
   // Fetch locked seats periodically
@@ -583,14 +590,23 @@ export default function BookMyShowSeatMap({
             </div>
             <motion.button
               onClick={handleLockSeats}
-              whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(220, 38, 38, 0.5)' }}
+              whileHover={{ scale: 1.05, y: -2, boxShadow: '0 10px 30px rgba(220, 38, 38, 0.5)' }}
               whileTap={{ scale: 0.95 }}
-              className="ml-6 px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-bold text-base transition-all shadow-xl shadow-red-600/30 flex items-center gap-2"
+              className="ml-6 px-8 py-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-xl font-bold text-base transition-all shadow-xl shadow-red-600/30 flex items-center gap-2 relative overflow-hidden group"
             >
-              <span>Proceed</span>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {/* Shine effect */}
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
+              <span className="relative z-10">Proceed</span>
+              <motion.svg 
+                className="w-5 h-5 relative z-10" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
+              </motion.svg>
             </motion.button>
           </div>
         </motion.div>

@@ -1,226 +1,340 @@
 import { notFound } from 'next/navigation'
 import MovieDetailClient from '@/components/MovieDetailClient'
-import { MOCK_THEATERS, getTheaterByScreenId } from '@/lib/mockData'
+import { query, queryOne, execute, getConnection } from '@/lib/db'
+import { getTmdbApiKey } from '@/lib/config'
 
 type Props = {
   params: Promise<{ id: string }>
 }
 
-// Generate hardcoded showtimes for any movie
-function generateHardcodedShowtimes(movieId: string) {
-  const slots = ['10:00', '13:00', '16:00', '19:00', '22:00']
-  const today = new Date()
-  const dateStr = today.toISOString().split('T')[0]
-  const showtimes: any[] = []
-  
-  // Get all screens from mock theaters
-  const allScreens: Array<{ id: string; name: string; theaterId: string }> = []
-  MOCK_THEATERS.forEach(theater => {
-    theater.screens.forEach(screen => {
-      allScreens.push({
-        id: screen.id,
-        name: screen.name,
-        theaterId: theater.id,
-      })
-    })
-  })
-  
-  // Generate showtimes for each screen
-  allScreens.forEach((screen, screenIndex) => {
-    slots.forEach((slot, slotIndex) => {
-      // Parse slot time (e.g., "10:00" -> hours and minutes)
-      const [hours, minutes] = slot.split(':')
-      const startTimeDate = new Date()
-      startTimeDate.setHours(parseInt(hours), parseInt(minutes), 0, 0)
-      
-      // If the time has passed today, set it for tomorrow
-      if (startTimeDate < new Date()) {
-        startTimeDate.setDate(startTimeDate.getDate() + 1)
-      }
-      
-      const startTime = startTimeDate.toISOString()
-      const theaterData = getTheaterByScreenId(screen.id)
-      
-      showtimes.push({
-        id: `showtime-${movieId}-${screenIndex}-${slotIndex}`,
-        startTime,
-        price: 45000 + Math.floor(Math.random() * 15000), // ₹450-₹600
-        screenId: screen.id,
-        screenName: screen.name,
-        theaterId: theaterData?.theater.id || MOCK_THEATERS[0].id,
-        theaterName: theaterData?.theater.name || MOCK_THEATERS[0].name,
-        theaterLocation: theaterData?.theater.location || MOCK_THEATERS[0].location,
-        movieId,
-      })
-    })
-  })
-  
-  return showtimes
-}
-
 export default async function MovieDetailPage({ params }: Props) {
   const { id } = await params
-  const { getTmdbApiKey, CONFIG } = await import('@/lib/config')
+  const { CONFIG } = await import('@/lib/config')
   const apiKey = getTmdbApiKey()
-  const base = CONFIG.BASE_URL
+  
+  // Get base URL for API calls (server-side)
+  const base = process.env.NEXT_PUBLIC_BASE_URL || 
+               process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 
+               'http://localhost:3000'
 
   let movie: any = null
 
-  // Try TMDb directly (server-side)
+  // Fetch movie details from TMDb API (with caching and parallel requests)
+  let watchProviders: any = null
   if (apiKey) {
     try {
-      // Create AbortController for timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
-
-      try {
-        // Fetch movie details with credits
-        const movieRes = await fetch(
+      // Fetch movie details, videos, and watch providers in parallel
+      const [movieRes, videosRes, providersRes] = await Promise.allSettled([
+        fetch(
           `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}&language=en-IN&append_to_response=credits`,
           { 
-            cache: 'no-store',
-            signal: controller.signal,
+            next: { revalidate: 3600 }, // Cache for 1 hour (ISR)
             headers: {
               'Accept': 'application/json',
             }
           }
-        )
-        
-        // Fetch videos separately without language restriction to get all available trailers
-        const videosRes = await fetch(
+        ),
+        fetch(
           `https://api.themoviedb.org/3/movie/${id}/videos?api_key=${apiKey}`,
           { 
-            cache: 'no-store',
-            signal: controller.signal,
+            next: { revalidate: 3600 }, // Cache for 1 hour
+            headers: {
+              'Accept': 'application/json',
+            }
+          }
+        ),
+        fetch(
+          `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=${apiKey}`,
+          { 
+            next: { revalidate: 3600 }, // Cache for 1 hour
             headers: {
               'Accept': 'application/json',
             }
           }
         )
-        
-        clearTimeout(timeoutId)
+      ])
 
-        // Check if API key is invalid
-        if (movieRes.status === 401) {
-          console.error('⚠️  TMDb API Key is invalid or expired. Please check your TMDB_API_KEY in .env.local')
-          console.error('📖 Get a new API key from: https://www.themoviedb.org/settings/api')
-        } else if (movieRes.status === 404) {
-          console.warn(`⚠️  Movie ${id} not found in TMDb`)
-        } else if (!movieRes.ok) {
-          console.error(`⚠️  TMDb API error: ${movieRes.status} ${movieRes.statusText}`)
-        }
-        
-        if (movieRes.ok && videosRes.ok) {
-          const m = await movieRes.json()
-          const videosData = await videosRes.json()
+      // Process movie details
+      if (movieRes.status === 'fulfilled' && movieRes.value.ok) {
+        try {
+          const m = await movieRes.value.json()
           
-          // Merge videos into movie object
-          m.videos = videosData
-          
-          const cast = (m.credits?.cast || [])
-            .slice(0, 8)
-            .map((c: any) => ({ id: c.id, name: c.name, character: c.character }))
-          const crew = (m.credits?.crew || [])
-            .filter((c: any) => c.job === 'Director' || c.job === 'Producer')
-            .slice(0, 4)
-            .map((c: any) => ({ id: c.id, name: c.name, job: c.job }))
-          // Get trailer URL from videos - try multiple strategies for better coverage
-          const videos = m.videos?.results || []
-          let trailer: any = null
-          
-          // Strategy 1: Look for official Trailer on YouTube
-          trailer = videos.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube' && v.official)
-          
-          // Strategy 2: Look for any Trailer on YouTube (if no official found)
-          if (!trailer) {
-            trailer = videos.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube')
+          // Process videos (non-critical)
+          let videos = { results: [] }
+          if (videosRes.status === 'fulfilled' && videosRes.value.ok) {
+            try {
+              videos = await videosRes.value.json()
+            } catch (e) {
+              // Ignore video parsing errors
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('[TMDb] Failed to parse videos:', e)
+              }
+            }
           }
-          
-          // Strategy 3: Look for Teaser on YouTube (common for Indian movies)
-          if (!trailer) {
-            trailer = videos.find((v: any) => v.type === 'Teaser' && v.site === 'YouTube')
-          }
-          
-          // Strategy 4: Look for any YouTube video (Trailer, Teaser, Featurette, etc.)
-          if (!trailer) {
-            trailer = videos.find((v: any) => v.site === 'YouTube' && (v.type === 'Trailer' || v.type === 'Teaser' || v.type === 'Featurette'))
-          }
-          
-          // Strategy 5: Fallback to any YouTube video
-          if (!trailer) {
-            trailer = videos.find((v: any) => v.site === 'YouTube')
-          }
-          
-          const trailerUrl = trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null
 
+          // Process watch providers (for OTT links)
+          if (providersRes.status === 'fulfilled' && providersRes.value.ok) {
+            try {
+              const providersData = await providersRes.value.json()
+              // Get IN (India) providers, fallback to US if not available
+              watchProviders = providersData.results?.IN || providersData.results?.US || null
+            } catch (e) {
+              if (process.env.NODE_ENV === 'development') {
+                console.warn('[TMDb] Failed to parse watch providers:', e)
+              }
+            }
+          }
+            
           movie = {
             id: String(m.id),
             title: m.title,
-            overview: m.overview,
-            runtime: m.runtime,
-            releaseDate: m.release_date,
-            rating: m.vote_average,
-            language: m.original_language,
+            overview: m.overview || '',
             posterUrl: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
-            backdropUrl: m.backdrop_path ? `https://image.tmdb.org/t/p/w1280${m.backdrop_path}` : null,
-            genres: (m.genres || []).map((g: any) => g.name),
-            cast,
-            crew,
-            trailerUrl,
+            backdropUrl: m.backdrop_path ? `https://image.tmdb.org/t/p/original${m.backdrop_path}` : null,
+            releaseDate: m.release_date || '',
+            duration: m.runtime || 120,
+            rating: m.vote_average || 0,
+            genre: m.genres?.[0]?.name || 'Feature',
+            language: m.original_language || 'en',
+            cast: m.credits?.cast?.slice(0, 10).map((actor: any) => ({
+              name: actor.name,
+              character: actor.character,
+              profileUrl: actor.profile_path ? `https://image.tmdb.org/t/p/w185${actor.profile_path}` : null,
+            })) || [],
+            crew: m.credits?.crew?.slice(0, 10).map((member: any) => ({
+              name: member.name,
+              role: member.job,
+            })) || [],
+            trailer: videos.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube')?.key || null,
           }
+        } catch (parseErr: any) {
+          console.error('[TMDb] Failed to parse movie response:', parseErr.message)
         }
-      } catch (fetchErr: any) {
-        clearTimeout(timeoutId)
-        if (fetchErr.name === 'AbortError') {
-          console.error('⚠️  TMDb API request timed out after 10 seconds')
-        } else if (fetchErr.code === 'ENOTFOUND' || fetchErr.code === 'ECONNREFUSED') {
-          console.error('⚠️  Network error: Cannot reach TMDb API. Check your internet connection.')
-        } else {
-          console.error('⚠️  TMDb fetch failed:', fetchErr.message || fetchErr)
+      } else if (movieRes.status === 'rejected') {
+        // Network error or fetch failed
+        const errorMsg = movieRes.reason?.message || 'Unknown error'
+        if (process.env.NODE_ENV === 'development') {
+          console.error('[TMDb] Failed to fetch movie:', errorMsg)
+          console.error('[TMDb] Error details:', movieRes.reason)
         }
+        // Don't throw - let the page continue with notFound() below
+      } else if (movieRes.status === 'fulfilled' && !movieRes.value.ok) {
+        // HTTP error response
+        const statusText = movieRes.value.statusText || 'Unknown error'
+        if (process.env.NODE_ENV === 'development') {
+          console.error(`[TMDb] API error: ${movieRes.value.status} ${statusText}`)
+        }
+        // If 404, movie doesn't exist - will show notFound() below
+        // For other errors, log but continue
       }
     } catch (err: any) {
-      console.error('⚠️  TMDb fetch error:', err?.message || err)
+      // Catch any unexpected errors
+      if (process.env.NODE_ENV === 'development') {
+        console.error('[TMDb] Movie fetch error:', err.message || err)
+      }
+      // Don't throw - let the page continue
     }
   } else {
-    console.warn('⚠️  TMDb API key not available. Check lib/config.ts')
+    // No API key - log warning but don't crash
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('[TMDb] API key not available - movie details will not be fetched')
+    }
   }
 
-  // If movie is still null after all attempts, return 404
   if (!movie) {
     return notFound()
   }
 
-  // Recommendations
-  let recommendations: any[] = []
-  try {
-    const recRes = await fetch(`${base}/api/movies/${id}/recommendations`, { cache: 'no-store' })
-    if (recRes.ok) {
-      const recData = await recRes.json()
-      recommendations = recData.results || []
-    }
-  } catch (err) {
-    console.error('Recommendations fetch failed:', err)
+  // If movie has watch providers (OTT), don't fetch showtimes
+  const isOTTMovie = watchProviders && (
+    (watchProviders.flatrate && watchProviders.flatrate.length > 0) ||
+    (watchProviders.buy && watchProviders.buy.length > 0) ||
+    (watchProviders.rent && watchProviders.rent.length > 0)
+  )
+
+  // Debug log
+  if (process.env.NODE_ENV === 'development') {
+    console.log('[Movie Detail] Watch Providers:', watchProviders)
+    console.log('[Movie Detail] Is OTT Movie:', isOTTMovie)
   }
 
-  // Generate hardcoded showtimes for this movie (always show showtimes)
-  const showtimes = generateHardcodedShowtimes(movie.id)
-  
-  // Sort showtimes by theater name and start time
-  showtimes.sort((a, b) => {
-    const theaterCompare = (a.theaterName || '').localeCompare(b.theaterName || '')
-    if (theaterCompare !== 0) return theaterCompare
-    return new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-  })
-  
-  console.log(`[MovieDetailPage] Generated ${showtimes.length} hardcoded showtimes for movie ${movie.id}`)
+  // Get showtimes from database (only if not an OTT movie)
+  let showtimes: any[] = []
+  if (!isOTTMovie) {
+    try {
+      // Check if Movie record exists, create if not
+    let movieRecord = await queryOne<any>(
+      'SELECT id FROM "Movie" WHERE id = $1',
+      [id]
+    )
+
+    if (!movieRecord) {
+      // Create Movie record
+      try {
+        await execute(
+          `INSERT INTO "Movie" (id, title, "posterUrl", duration, genre, "releaseDate")
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title`,
+          [id, movie?.title || 'Movie', '', 120, 'Feature', new Date()]
+        )
+      } catch (insertErr: any) {
+        // Ignore duplicate key errors
+        if (!insertErr.message?.includes('duplicate') && !insertErr.code === '23505') {
+          console.error('Failed to create Movie record:', insertErr)
+        }
+      }
+    }
+
+    // Get existing showtimes (optimized query with LIMIT)
+    showtimes = await query<any>(
+      `SELECT s.*, sc.name as "screenName", t.name as "theaterName", t.location as "theaterLocation"
+       FROM "Showtime" s
+       INNER JOIN "Screen" sc ON s."screenId" = sc.id
+       INNER JOIN "Theater" t ON sc."theaterId" = t.id
+       WHERE s."movieId" = $1 AND s."startTime" >= NOW()
+       ORDER BY s."startTime" ASC
+       LIMIT 100`,
+      [id]
+    )
+
+    // If no showtimes exist, generate them (optimized batch insert)
+    if (showtimes.length === 0) {
+      try {
+        // Get all theaters and screens (cached query)
+        const theaters = await query<any>(
+          `SELECT t.id as "theaterId", t.name as "theaterName", t.location as "theaterLocation",
+                  sc.id as "screenId", sc.name as "screenName"
+           FROM "Theater" t
+           INNER JOIN "Screen" sc ON t.id = sc."theaterId"
+           ORDER BY t.name, sc.name
+           LIMIT 50`,
+          []
+        )
+
+        if (theaters.length > 0) {
+          const now = new Date()
+          const tomorrow = new Date(now)
+          tomorrow.setDate(tomorrow.getDate() + 1)
+          tomorrow.setHours(10, 0, 0, 0)
+
+          // Generate showtimes for next 7 days (optimized batch insert)
+          const timeSlots = ['10:00', '13:30', '17:00', '20:30', '23:00']
+          const showtimesToInsert: Array<[string, string, string, Date, number]> = []
+          
+          for (let day = 0; day < 7; day++) {
+            const date = new Date(tomorrow)
+            date.setDate(date.getDate() + day)
+            
+            for (const theater of theaters) {
+              const slotsToUse = timeSlots.slice(0, Math.min(3, timeSlots.length))
+              
+              for (const timeSlot of slotsToUse) {
+                const [hours, minutes] = timeSlot.split(':').map(Number)
+                const startTime = new Date(date)
+                startTime.setHours(hours, minutes, 0, 0)
+
+                if (startTime < now) continue
+
+                const basePrice = 30000
+                const price = basePrice + Math.floor(Math.random() * 20000)
+                const showtimeId = `showtime-${id}-${theater.screenId}-${day}-${timeSlot.replace(':', '')}`
+                
+                showtimesToInsert.push([showtimeId, id, theater.screenId, startTime, price])
+              }
+            }
+          }
+
+          // Batch insert showtimes (much faster than individual inserts)
+          if (showtimesToInsert.length > 0) {
+            try {
+              const { getConnection } = await import('@/lib/db')
+              const connection = await getConnection()
+              try {
+                await connection.query('BEGIN')
+                
+                // Use batch insert with VALUES clause (limit to 100 per batch to avoid query size limits)
+                const batchSize = 50
+                for (let i = 0; i < showtimesToInsert.length; i += batchSize) {
+                  const batch = showtimesToInsert.slice(i, i + batchSize)
+                  const values = batch.map((_, idx) => {
+                    const base = idx * 5
+                    return `($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4}, $${base + 5})`
+                  }).join(', ')
+                  
+                  const params = batch.flat()
+                  
+                  await connection.query(
+                    `INSERT INTO "Showtime" (id, "movieId", "screenId", "startTime", price)
+                     VALUES ${values}
+                     ON CONFLICT (id) DO UPDATE SET "startTime" = EXCLUDED."startTime", price = EXCLUDED.price`,
+                    params
+                  )
+                }
+                
+                await connection.query('COMMIT')
+              } catch (batchErr: any) {
+                await connection.query('ROLLBACK')
+                console.error('Batch insert failed, trying individual inserts:', batchErr.message)
+                // Fallback to individual inserts if batch fails
+                for (const [showtimeId, movieId, screenId, startTime, price] of showtimesToInsert) {
+                  try {
+                    await execute(
+                      `INSERT INTO "Showtime" (id, "movieId", "screenId", "startTime", price)
+                       VALUES ($1, $2, $3, $4, $5)
+                       ON CONFLICT (id) DO UPDATE SET "startTime" = EXCLUDED."startTime", price = EXCLUDED.price`,
+                      [showtimeId, movieId, screenId, startTime, price]
+                    )
+                  } catch (showtimeErr: any) {
+                    // Ignore duplicate errors
+                    if (!showtimeErr.message?.includes('duplicate') && showtimeErr.code !== '23505') {
+                      console.error('Failed to create showtime:', showtimeErr)
+                    }
+                  }
+                }
+              } finally {
+                connection.release()
+              }
+            } catch (err: any) {
+              console.error('Failed to batch insert showtimes:', err.message)
+            }
+          }
+
+          // Fetch the newly created showtimes
+          showtimes = await query<any>(
+            `SELECT s.*, sc.name as "screenName", t.name as "theaterName", t.location as "theaterLocation"
+             FROM "Showtime" s
+             INNER JOIN "Screen" sc ON s."screenId" = sc.id
+             INNER JOIN "Theater" t ON sc."theaterId" = t.id
+             WHERE s."movieId" = $1 AND s."startTime" >= NOW()
+             ORDER BY s."startTime" ASC
+             LIMIT 100`,
+            [id]
+          )
+        }
+      } catch (genErr: any) {
+        console.error('Failed to generate showtimes:', genErr.message || genErr)
+        // Continue with empty showtimes array
+      }
+    }
+    } catch (err: any) {
+      console.error('Failed to fetch showtimes:', err.message || err)
+      showtimes = []
+    }
+  }
 
   return (
-    <MovieDetailClient 
-      movie={movie} 
-      showtimes={showtimes || []}
-      recommendations={recommendations}
-      trailerUrl={movie.trailerUrl || null}
+    <MovieDetailClient
+      movie={movie}
+      showtimes={isOTTMovie ? [] : showtimes.map((st: any) => ({
+        id: st.id,
+        startTime: st.startTime,
+        price: st.price,
+        screenName: st.screenName,
+        theaterName: st.theaterName,
+        theaterLocation: st.theaterLocation,
+      }))}
+      watchProviders={watchProviders}
+      baseUrl={base}
     />
   )
 }

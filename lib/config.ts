@@ -1,13 +1,6 @@
-// Hardcoded configuration for showcase mode (no environment variables needed)
+// Configuration - all values must come from environment variables
 
 export const CONFIG = {
-  // TMDb API Key (hardcoded for showcase)
-  TMDB_API_KEY: 'c45a857c193f6302f2b5061c3b85e743',
-  
-  // NextAuth Configuration
-  NEXTAUTH_SECRET: 'cinesnap-showcase-secret-key-2024-change-in-production',
-  NEXTAUTH_URL: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-  
   // Base URL
   BASE_URL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
   
@@ -18,17 +11,28 @@ export const CONFIG = {
   // Razorpay (optional - for payments)
   RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
   RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
-  
-  // Showcase Mode
-  SHOWCASE_MODE: true, // Always true - no database needed
 }
 
-// Get TMDb API key (use hardcoded if env not set)
-export function getTmdbApiKey(): string {
-  return process.env.TMDB_API_KEY || CONFIG.TMDB_API_KEY
+// Get TMDb API key (must be set in environment variables)
+export function getTmdbApiKey(): string | null {
+  const key = process.env.TMDB_API_KEY
+  if (!key || key === 'your-tmdb-api-key' || key.trim() === '') {
+    console.warn('⚠️  TMDB_API_KEY environment variable is not set or invalid!')
+    console.warn('📝 Please add TMDB_API_KEY to your .env.local file')
+    console.warn('📖 Get your free API key from: https://www.themoviedb.org/settings/api')
+    console.warn('💡 After adding, restart your dev server')
+    return null
+  }
+  return key.trim()
 }
 
-// Get NextAuth secret (use hardcoded if env not set)
-export function getNextAuthSecret(): string {
-  return process.env.NEXTAUTH_SECRET || CONFIG.NEXTAUTH_SECRET
+// Get TMDb API key (throws if not set - for critical paths)
+export function requireTmdbApiKey(): string {
+  const key = getTmdbApiKey()
+  if (!key) {
+    throw new Error('TMDB_API_KEY environment variable is not set. Add it to .env.local and restart the server.')
+  }
+  return key
 }
+
+// Note: getNextAuthSecret() is defined in lib/auth.ts to avoid circular dependencies

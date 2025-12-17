@@ -75,6 +75,13 @@ export default function MobileMenu() {
                   {session ? (
                     <>
                       <Link
+                        href="/ott"
+                        onClick={() => setIsOpen(false)}
+                        className="block text-lg text-white/80 hover:text-white transition-colors py-2 border-b border-white/10"
+                      >
+                        OTT Shows
+                      </Link>
+                      <Link
                         href="/wishlist"
                         onClick={() => setIsOpen(false)}
                         className="block text-lg text-white/80 hover:text-white transition-colors py-2 border-b border-white/10"

@@ -48,58 +48,103 @@ export default function MoviesGrid({ movies }: Props) {
             >
               <Link href={`/movies/${movie.id}`}>
                 <motion.div
-                  whileHover={{ scale: 1.05, y: -10 }}
-                  className="glass rounded-2xl overflow-hidden group cursor-pointer"
+                  whileHover={{ scale: 1.05, y: -10, rotateY: 5 }}
+                  whileTap={{ scale: 0.98 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                  className="glass-enhanced rounded-2xl overflow-hidden group cursor-pointer hover-lift"
                 >
-                  <div className="aspect-[2/3] bg-white/5 border border-white/10 relative overflow-hidden">
+                  <div className="aspect-[2/3] bg-gradient-to-br from-white/10 to-white/5 border border-white/10 relative overflow-hidden">
                     {movie.posterUrl ? (
                       <>
-                        <Image
-                          src={movie.posterUrl}
-                          alt={movie.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                          unoptimized
-                        />
-                        <div className="absolute top-3 right-3 z-10" onClick={(e) => e.preventDefault()}>
-                          <WishlistButton movieId={movie.id} className="bg-black/50 backdrop-blur-sm rounded-full p-2" />
+                        <motion.div
+                          whileHover={{ scale: 1.1 }}
+                          transition={{ duration: 0.5 }}
+                          className="absolute inset-0"
+                        >
+                          <Image
+                            src={movie.posterUrl}
+                            alt={movie.title}
+                            fill
+                            className="object-cover"
+                            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                            unoptimized
+                          />
+                        </motion.div>
+                        {/* Animated overlay gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-500">
+                          <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                         </div>
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          <div className="absolute bottom-4 left-4 right-4">
-                            <p className="text-white font-clash font-semibold text-lg mb-1">
-                              {movie.title}
-                            </p>
-                            <p className="text-gray-300 text-sm">
-                              {movie.genre} • {movie.duration} mins
-                            </p>
-                          </div>
+                        {/* Shine effect */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                         </div>
+                        <motion.div 
+                          className="absolute top-3 right-3 z-10"
+                          onClick={(e) => e.preventDefault()}
+                          whileHover={{ scale: 1.1, rotate: 90 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          <WishlistButton movieId={movie.id} className="bg-black/70 backdrop-blur-md rounded-full p-2 shadow-lg hover-glow" />
+                        </motion.div>
+                        {/* Rating badge with animation */}
+                        {movie.rating !== undefined && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            transition={{ delay: index * 0.1 + 0.3, type: "spring" }}
+                            className="absolute top-3 left-3 z-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full px-2 py-1 shadow-lg"
+                          >
+                            <span className="text-xs font-bold text-white flex items-center gap-1">
+                              ⭐ {movie.rating.toFixed(1)}
+                            </span>
+                          </motion.div>
+                        )}
+                        <motion.div 
+                          className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500"
+                          initial={{ opacity: 0 }}
+                          whileHover={{ opacity: 1 }}
+                        >
+                          <p className="text-white font-clash font-semibold text-lg mb-1 drop-shadow-lg">
+                            {movie.title}
+                          </p>
+                          <p className="text-gray-300 text-sm">
+                            {movie.genre} • {movie.duration} mins
+                          </p>
+                        </motion.div>
                       </>
                     ) : (
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-4xl font-clash font-bold text-white/30">
+                      <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-purple-900/20 to-pink-900/20">
+                        <motion.span 
+                          className="text-4xl font-clash font-bold text-white/30"
+                          animate={{ scale: [1, 1.1, 1] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        >
                           {movie.title?.charAt(0) || 'M'}
-                        </span>
+                        </motion.span>
                       </div>
                     )}
                   </div>
-                  <div className="p-4">
-                    <h3 className="font-clash font-semibold text-lg mb-2 group-hover:text-white transition-colors">
+                  <div className="p-4 bg-gradient-to-b from-transparent to-black/20">
+                    <motion.h3 
+                      className="font-clash font-semibold text-lg mb-2 group-hover:text-white transition-colors"
+                      whileHover={{ x: 5 }}
+                    >
                       {movie.title}
-                    </h3>
+                    </motion.h3>
                     <p className="text-xs text-gray-400 mb-1">
                       {movie.genre || 'Feature'} • {movie.duration ? `${movie.duration} mins` : '—'}
                     </p>
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-gray-500 mb-2">
                       {movie.releaseDate ? formatDate(movie.releaseDate) : ''}
                     </p>
-                    <div className="flex items-center gap-2 text-[11px] text-gray-400 mt-2">
-                      {movie.rating !== undefined && (
-                        <span className="px-2 py-1 glass rounded text-white/80">⭐ {movie.rating?.toFixed(1)}</span>
-                      )}
+                    <div className="flex items-center gap-2 text-[11px] mt-2">
                       {movie.language && (
-                        <span className="px-2 py-1 glass rounded text-white/60 uppercase">{movie.language}</span>
+                        <motion.span 
+                          className="px-2 py-1 glass rounded text-white/60 uppercase"
+                          whileHover={{ scale: 1.1 }}
+                        >
+                          {movie.language}
+                        </motion.span>
                       )}
                     </div>
                   </div>

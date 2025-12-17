@@ -10,7 +10,14 @@ const nextConfig = {
         hostname: 'image.tmdb.org',
       },
     ],
+    // Optimize image loading
+    formats: ['image/avif', 'image/webp'],
+    minimumCacheTTL: 60,
   },
+  // Enable compression
+  compress: true,
+  // Optimize production builds
+  swcMinify: true,
   async rewrites() {
     return [
       {
@@ -18,6 +25,10 @@ const nextConfig = {
         destination: '/manifest',
       },
     ]
+  },
+  // Experimental optimizations
+  experimental: {
+    optimizePackageImports: ['framer-motion', '@tsparticles/react'],
   },
 }
 

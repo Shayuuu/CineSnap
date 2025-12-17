@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <MobileMenu />
                 </div>
               </header>
-              <main className="relative z-10 min-h-screen">{children}</main>
+              <main className="relative z-10 min-h-screen page-transition">{children}</main>
               <Footer />
               <SocialProofTicker />
             </div>

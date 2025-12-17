@@ -1,10 +1,24 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { queryOne, query } from '@/lib/db'
-import { getNextAuthSecret } from '@/lib/config'
+
+// Get NextAuth secret (lazy evaluation)
+function getNextAuthSecret(): string {
+  const secret = process.env.NEXTAUTH_SECRET
+  if (!secret) {
+    console.error('❌ NEXTAUTH_SECRET environment variable is not set!')
+    console.error('📝 Please add NEXTAUTH_SECRET to your .env.local file')
+    console.error('📖 Generate one with: openssl rand -base64 32')
+    console.error('💡 After adding, restart your dev server')
+    throw new Error('NEXTAUTH_SECRET environment variable is not set. Add it to .env.local and restart the server.')
+  }
+  return secret
+}
 
 export const authOptions: NextAuthOptions = {
   secret: getNextAuthSecret(),
+  // Use NEXTAUTH_URL if set, otherwise default to localhost
+  url: process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
   pages: {
     signIn: '/login',
     error: '/login',
@@ -33,12 +47,9 @@ export const authOptions: NextAuthOptions = {
           const email = credentials.email.trim().toLowerCase()
           console.log('[NextAuth] Searching for user with email:', email)
           
-          // Check if we're in showcase mode
-          const isShowcaseMode = !process.env.DB_HOST || process.env.SHOWCASE_MODE === 'true'
-          
           // Check if user exists (case-insensitive email search)
           let dbUser = await queryOne<any>(
-            'SELECT * FROM User WHERE LOWER(email) = ?', 
+            'SELECT * FROM "User" WHERE LOWER(email) = $1', 
             [email]
           )
           
@@ -46,44 +57,16 @@ export const authOptions: NextAuthOptions = {
           if (!dbUser) {
             console.log('[NextAuth] Case-insensitive search failed, trying exact match...')
             dbUser = await queryOne<any>(
-              'SELECT * FROM User WHERE email = ?', 
+              'SELECT * FROM "User" WHERE email = $1', 
               [credentials.email.trim()]
             )
-          }
-          
-          // In showcase mode, auto-create user if they don't exist
-          if (!dbUser && isShowcaseMode) {
-            console.log('[NextAuth] Showcase mode: Auto-creating user:', email)
-            const { randomBytes } = await import('crypto')
-            const { execute } = await import('@/lib/db')
-            const userId = randomBytes(16).toString('hex')
-            
-            try {
-              await execute(
-                'INSERT INTO User (id, email, name, password, role) VALUES (?, ?, ?, ?, ?)',
-                [userId, email, email?.split('@')[0] || 'User', credentials.password, 'USER']
-              )
-              // Fetch the newly created user
-              dbUser = await queryOne<any>(
-                'SELECT * FROM User WHERE id = ?',
-                [userId]
-              )
-              console.log('[NextAuth] Created user:', userId)
-            } catch (createError: any) {
-              console.error('[NextAuth] Failed to create user:', createError)
-              // Try to fetch again in case it was created by another request
-              dbUser = await queryOne<any>(
-                'SELECT * FROM User WHERE LOWER(email) = ?',
-                [email]
-              )
-            }
           }
           
           if (!dbUser) {
             console.error(`[NextAuth] User not found: ${email}`)
             // Debug: List all users
             try {
-              const allUsers = await query<any>('SELECT email, id FROM User LIMIT 10')
+              const allUsers = await query<any>('SELECT email, id FROM "User" LIMIT 10')
               console.log('[NextAuth] Users in database:', allUsers.map((u: any) => ({ email: u.email, id: u.id })))
             } catch (e) {
               console.log('[NextAuth] Could not fetch users for debugging')
@@ -93,21 +76,31 @@ export const authOptions: NextAuthOptions = {
 
           console.log(`[NextAuth] User found: ${dbUser.email} (ID: ${dbUser.id}, Role: ${dbUser.role || 'USER'})`)
           
-          // For showcase mode or development: accept password if it matches mock user password
-          // In production, you would verify: await bcrypt.compare(credentials.password, dbUser.passwordHash)
-          const passwordMatch = 
-            (dbUser.password && dbUser.password === credentials.password) ||
-            (dbUser.passwordHash && dbUser.passwordHash === credentials.password)
+          // Verify password
+          // Check if password or passwordHash column exists and matches
+          let passwordMatch = false
           
-          // Reuse isShowcaseMode from above (line 37)
-          if (!passwordMatch && !isShowcaseMode) {
-            console.error('[NextAuth] Password mismatch')
-            return null
+          if (dbUser.password) {
+            // Plain password comparison (for development)
+            passwordMatch = dbUser.password === credentials.password
+            console.log('[NextAuth] Checking plain password match')
+          } else if (dbUser.passwordHash) {
+            // Hashed password comparison (for production)
+            // In production, use: await bcrypt.compare(credentials.password, dbUser.passwordHash)
+            passwordMatch = dbUser.passwordHash === credentials.password
+            console.log('[NextAuth] Checking passwordHash match')
+          } else {
+            // No password stored - allow login for development (user was created without password)
+            // In production, this should fail
+            console.warn('[NextAuth] No password stored for user - allowing login (dev mode)')
+            passwordMatch = true // Allow login if no password is stored (development mode)
           }
           
-          // In showcase mode, log that we're accepting any password
-          if (isShowcaseMode && !passwordMatch) {
-            console.log('[NextAuth] Showcase mode: Accepting password for demo purposes')
+          if (!passwordMatch) {
+            console.error('[NextAuth] Password mismatch')
+            console.error('[NextAuth] User has password:', !!dbUser.password)
+            console.error('[NextAuth] User has passwordHash:', !!dbUser.passwordHash)
+            return null
           }
           
           const user = {
@@ -146,14 +139,14 @@ export const authOptions: NextAuthOptions = {
           
           // Try case-insensitive lookup first
           let dbUser = await queryOne<any>(
-            'SELECT id, role FROM User WHERE LOWER(email) = ?',
+            'SELECT id, role FROM "User" WHERE LOWER(email) = $1',
             [email]
           )
           
           // If not found, try exact match
           if (!dbUser) {
             dbUser = await queryOne<any>(
-              'SELECT id, role FROM User WHERE email = ?',
+              'SELECT id, role FROM "User" WHERE email = $1',
               [session.user.email.trim()]
             )
           }
@@ -167,19 +160,19 @@ export const authOptions: NextAuthOptions = {
             
             try {
               await execute(
-                'INSERT INTO User (id, email, name, role) VALUES (?, ?, ?, ?)',
+                'INSERT INTO "User" (id, email, name, role) VALUES ($1, $2, $3, $4)',
                 [userId, email, session.user.name || email?.split('@')[0] || 'User', 'USER']
               )
               dbUser = { id: userId, role: 'USER' }
               console.log('[NextAuth] Created user:', userId)
             } catch (createError: any) {
               // User might have been created by another request
-              if (createError?.code !== 'ER_DUP_ENTRY') { // MySQL duplicate key error
+              if (createError?.code !== '23505') { // PostgreSQL unique violation error
                 console.error('[NextAuth] Failed to create user:', createError)
               }
               // Try to fetch again
               dbUser = await queryOne<any>(
-                'SELECT id, role FROM User WHERE LOWER(email) = ?',
+                'SELECT id, role FROM "User" WHERE LOWER(email) = $1',
                 [email]
               )
             }

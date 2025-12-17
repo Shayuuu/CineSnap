@@ -19,9 +19,9 @@ export async function GET(req: NextRequest) {
       const email = session.user.email.trim().toLowerCase()
       console.log('[My Bookings API] User ID not in session, looking up by email:', email)
       
-      // Try case-insensitive lookup first
+      // Try case-insensitive lookup first (PostgreSQL syntax)
       const dbUser = await queryOne<any>(
-        'SELECT id FROM User WHERE LOWER(email) = ?',
+        'SELECT id FROM "User" WHERE LOWER(email) = $1',
         [email]
       )
       
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
       } else {
         // Try exact match as fallback
         const dbUserExact = await queryOne<any>(
-          'SELECT id FROM User WHERE email = ?',
+          'SELECT id FROM "User" WHERE email = $1',
           [session.user.email.trim()]
         )
         if (dbUserExact) {
@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       
       // Debug: List some users to help troubleshoot
       try {
-        const sampleUsers = await query<any>('SELECT id, email FROM User LIMIT 5')
+        const sampleUsers = await query<any>('SELECT id, email FROM "User" LIMIT 5')
         console.log('[My Bookings API] Sample users in database:', sampleUsers)
       } catch (err) {
         console.error('[My Bookings API] Could not fetch sample users:', err)
@@ -63,39 +63,39 @@ export async function GET(req: NextRequest) {
       }, { status: 401 })
     }
     
-    // Fetch all confirmed bookings for the user
+    // Fetch all confirmed bookings for the user (PostgreSQL syntax)
     const bookings = await query<any>(
       `SELECT 
         b.id,
-        b.totalAmount,
+        b."totalAmount",
         b.status,
-        b.createdAt,
-        b.razorpayOrderId,
-        m.title as movieTitle,
-        m.posterUrl,
-        t.name as theaterName,
-        sc.name as screenName,
-        s.startTime,
+        b."createdAt",
+        b."razorpayOrderId",
+        m.title as "movieTitle",
+        m."posterUrl",
+        t.name as "theaterName",
+        sc.name as "screenName",
+        s."startTime",
         s.price
-      FROM Booking b
-      INNER JOIN Showtime s ON b.showtimeId = s.id
-      INNER JOIN Movie m ON s.movieId = m.id
-      INNER JOIN Screen sc ON s.screenId = sc.id
-      INNER JOIN Theater t ON sc.theaterId = t.id
-      WHERE b.userId = ? AND b.status = 'CONFIRMED'
-      ORDER BY b.createdAt DESC`,
+      FROM "Booking" b
+      INNER JOIN "Showtime" s ON b."showtimeId" = s.id
+      INNER JOIN "Movie" m ON s."movieId" = m.id
+      INNER JOIN "Screen" sc ON s."screenId" = sc.id
+      INNER JOIN "Theater" t ON sc."theaterId" = t.id
+      WHERE b."userId" = $1 AND b.status = 'CONFIRMED'
+      ORDER BY b."createdAt" DESC`,
       [userId]
     )
 
-    // Fetch seats for each booking
+    // Fetch seats for each booking (PostgreSQL syntax)
     const bookingsWithSeats = await Promise.all(
       bookings.map(async (booking: any) => {
         const seats = await query<any>(
-          `SELECT s.\`row\`, s.\`number\`, s.type
-           FROM Seat s
-           INNER JOIN _BookingSeats bs ON s.id = bs.B
-           WHERE bs.A = ?
-           ORDER BY s.\`row\`, s.\`number\``,
+          `SELECT s."row", s."number", s.type
+           FROM "Seat" s
+           INNER JOIN "_BookingSeats" bs ON s.id = bs."B"
+           WHERE bs."A" = $1
+           ORDER BY s."row", s."number"`,
           [booking.id]
         )
         return {

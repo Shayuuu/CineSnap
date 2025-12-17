@@ -167,42 +167,63 @@ export default function HeroSection() {
       )}
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 md:py-20 text-center">
-        {/* Animated Tagline */}
+        {/* Animated Tagline with Gradient */}
         <motion.h1
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-clash font-bold mb-4 sm:mb-6 px-2 sm:px-4 leading-tight sm:leading-normal"
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl 2xl:text-9xl font-clash font-bold mb-4 sm:mb-6 px-2 sm:px-4 leading-tight sm:leading-normal relative"
         >
-          <span className="text-white break-words">{typedText}</span>
+          <motion.span 
+            className="gradient-text-gold break-words relative inline-block"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1 }}
+          >
+            {typedText}
+            {/* Glow effect */}
+            <span className="absolute inset-0 blur-xl opacity-50 gradient-text-gold -z-10">
+              {typedText}
+            </span>
+          </motion.span>
           {typedText.length < tagline.length && (
-            <span className="inline-block w-0.5 sm:w-1 h-12 sm:h-16 md:h-20 lg:h-24 bg-white animate-pulse ml-1 sm:ml-2">|</span>
+            <motion.span 
+              className="inline-block w-0.5 sm:w-1 h-12 sm:h-16 md:h-20 lg:h-24 bg-gradient-to-b from-yellow-400 to-orange-500 ml-1 sm:ml-2 rounded-full"
+              animate={{ opacity: [1, 0.3, 1] }}
+              transition={{ duration: 1, repeat: Infinity }}
+            />
           )}
         </motion.h1>
 
-        {/* Famous Movie Dialogue */}
+        {/* Famous Movie Dialogue with Enhanced Effects */}
         {currentDialogue && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5, duration: 0.6 }}
-            className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 mb-8 sm:mb-12 max-w-3xl mx-auto border border-white/20"
+            initial={{ opacity: 0, y: 30, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ delay: 0.5, duration: 0.6, type: "spring", stiffness: 100 }}
+            whileHover={{ scale: 1.02, y: -5 }}
+            className="glass-enhanced rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 mb-8 sm:mb-12 max-w-3xl mx-auto border border-white/20 hover-glow relative overflow-hidden"
           >
+            {/* Animated background gradient */}
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-pink-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            
             <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.7, duration: 0.8 }}
-              className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-clash font-semibold text-white mb-2 sm:mb-3 text-center italic px-2 break-words"
+              className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-clash font-semibold text-white mb-2 sm:mb-3 text-center italic px-2 break-words relative z-10"
             >
-              &ldquo;{currentDialogue.quote}&rdquo;
+              <span className="text-2xl sm:text-3xl md:text-4xl text-yellow-400/50">"</span>
+              {currentDialogue.quote}
+              <span className="text-2xl sm:text-3xl md:text-4xl text-yellow-400/50">"</span>
             </motion.p>
             <motion.p
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.9, duration: 0.8 }}
-              className="text-xs sm:text-sm md:text-base text-gray-400 text-center"
+              className="text-xs sm:text-sm md:text-base text-gray-300 text-center relative z-10 font-medium"
             >
-              — {currentDialogue.movie}
+              <span className="text-yellow-400/70">—</span> {currentDialogue.movie}
             </motion.p>
           </motion.div>
         )}
@@ -248,7 +269,7 @@ export default function HeroSection() {
           </motion.div>
         )}
 
-        {/* CTA Buttons */}
+        {/* CTA Buttons with Enhanced Effects */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -257,19 +278,35 @@ export default function HeroSection() {
         >
           <motion.a
             href="/movies"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            className="inline-block w-full sm:w-auto px-6 sm:px-6 md:px-8 py-3 sm:py-3 md:py-4 bg-white text-black rounded-full font-clash font-semibold text-sm sm:text-base md:text-lg hover:bg-white/90 transition-all touch-manipulation min-h-[48px] flex items-center justify-center"
+            className="btn-primary inline-block w-full sm:w-auto px-6 sm:px-6 md:px-8 py-3 sm:py-3 md:py-4 bg-gradient-to-r from-white to-gray-100 text-black rounded-full font-clash font-semibold text-sm sm:text-base md:text-lg hover:from-white hover:to-white transition-all touch-manipulation min-h-[48px] flex items-center justify-center relative overflow-hidden shadow-lg"
           >
-            Explore Movies →
+            <span className="relative z-10 flex items-center gap-2">
+              Explore Movies
+              <motion.span
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                →
+              </motion.span>
+            </span>
           </motion.a>
           <motion.a
             href="/mood-recommend"
-            whileHover={{ scale: 1.05 }}
+            whileHover={{ scale: 1.05, y: -2 }}
             whileTap={{ scale: 0.95 }}
-            className="inline-block w-full sm:w-auto px-6 sm:px-6 md:px-8 py-3 sm:py-3 md:py-4 glass rounded-full border border-white/20 hover:border-white/40 transition-all text-white font-clash font-semibold text-sm sm:text-base md:text-lg touch-manipulation min-h-[48px] flex items-center justify-center"
+            className="glass-enhanced rounded-full border border-white/20 hover:border-white/40 transition-all text-white font-clash font-semibold text-sm sm:text-base md:text-lg touch-manipulation min-h-[48px] flex items-center justify-center px-6 sm:px-6 md:px-8 py-3 sm:py-3 md:py-4 relative overflow-hidden hover-glow"
           >
-            🎭 Mood Match
+            <span className="relative z-10 flex items-center gap-2">
+              <motion.span
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                🎭
+              </motion.span>
+              Mood Match
+            </span>
           </motion.a>
         </motion.div>
       </div>

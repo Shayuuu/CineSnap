@@ -37,6 +37,7 @@ export default function PaymentClient({
   const searchParams = useSearchParams()
   const router = useRouter()
   const seatIds = searchParams.get('seats')?.split(',') || []
+  const seatPricesParam = searchParams.get('prices')
   const userId = searchParams.get('userId') || 'demo-user'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -44,7 +45,12 @@ export default function PaymentClient({
   const [foodTotal, setFoodTotal] = useState(0)
   const [bookingId, setBookingId] = useState<string | null>(null)
 
-  const total = pricePerSeat * seatIds.length + foodTotal
+  // Calculate total based on actual seat prices if provided, otherwise use pricePerSeat
+  const seatPrices = seatPricesParam 
+    ? seatPricesParam.split(',').map(p => parseFloat(p) || pricePerSeat)
+    : seatIds.map(() => pricePerSeat)
+  const seatsTotal = seatPrices.reduce((sum, price) => sum + price, 0)
+  const total = seatsTotal + foodTotal
 
   const cardBg = useMemo(
     () => ({
@@ -65,11 +71,11 @@ export default function PaymentClient({
     setError(null)
 
     try {
-      // Create booking first
+      // Create booking first (pass seat prices for accurate calculation)
       const bookingRes = await fetch('/api/bookings/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ showtimeId, seatIds, userId }),
+        body: JSON.stringify({ showtimeId, seatIds, userId, seatPrices }),
       })
 
       if (!bookingRes.ok) {
@@ -151,9 +157,13 @@ export default function PaymentClient({
         throw new Error('Razorpay SDK not loaded')
       }
 
+      // amount from API is in paise (correct for Razorpay)
+      // Ensure it matches the displayed total (convert rupees to paise)
+      const amountInPaise = Math.round(total * 100)
+
       const options = {
         key: razorpayKey,
-        amount: amount,
+        amount: amountInPaise, // Use calculated amount in paise to match display
         currency: 'INR',
         name: 'CineSnap',
         description: `${movieTitle} - ${seatIds.length} seat(s)`,
@@ -248,18 +258,36 @@ export default function PaymentClient({
               </div>
 
               <div className="border-t border-white/10 pt-4 sm:pt-6">
-                <div className="flex justify-between items-center mb-3 sm:mb-4 text-sm sm:text-base">
-                  <span className="text-gray-300">Seats ({seatIds.length})</span>
-                  <span className="text-white font-semibold">
-                    ₹{pricePerSeat / 100} × {seatIds.length}
-                  </span>
+                <div className="space-y-2 mb-3 sm:mb-4">
+                  {seatIds.map((seatId, index) => {
+                    const seatPrice = seatPrices[index] || pricePerSeat
+                    const parts = seatId.split('-')
+                    const row = parts[parts.length - 2]
+                    const num = parts[parts.length - 1]
+                    return (
+                      <div key={seatId} className="flex justify-between items-center text-sm sm:text-base">
+                        <span className="text-gray-300">Seat {row}{num}</span>
+                        <span className="text-white font-semibold">₹{seatPrice}</span>
+                      </div>
+                    )
+                  })}
                 </div>
+                <div className="flex justify-between items-center pt-2 border-t border-white/10 text-sm sm:text-base mb-3 sm:mb-4">
+                  <span className="text-gray-300">Subtotal ({seatIds.length} seats)</span>
+                  <span className="text-white font-semibold">₹{seatsTotal}</span>
+                </div>
+                {foodTotal > 0 && (
+                  <div className="flex justify-between items-center pt-2 border-t border-white/10 text-sm sm:text-base mb-3 sm:mb-4">
+                    <span className="text-gray-300">Food & Beverages</span>
+                    <span className="text-white font-semibold">₹{foodTotal}</span>
+                  </div>
+                )}
                 <div className="flex justify-between items-center pt-3 sm:pt-4 border-t border-white/10">
                   <span className="text-lg sm:text-xl font-clash font-bold text-white">
                     Total Amount
                   </span>
                   <span className="text-2xl sm:text-3xl font-clash font-bold text-white">
-                    ₹{total / 100}
+                    ₹{total}
                   </span>
                 </div>
               </div>
@@ -310,7 +338,7 @@ export default function PaymentClient({
                     <span>{seatIds.length} seat{seatIds.length > 1 ? 's' : ''}</span>
                   </div>
                   <div>
-                    <p className="text-white text-2xl sm:text-3xl font-clash mb-1 sm:mb-2">₹{(total / 100).toFixed(0)}</p>
+                    <p className="text-white text-2xl sm:text-3xl font-clash mb-1 sm:mb-2">₹{total.toFixed(0)}</p>
                     <p className="text-white/70 text-xs sm:text-sm line-clamp-1">
                       {movieTitle} • {formatDateTime(showtime)}
                     </p>
@@ -333,7 +361,28 @@ export default function PaymentClient({
                   whileTap={{ scale: loading ? 1 : 0.98 }}
                   className="w-full sm:w-auto px-8 sm:px-12 py-3 sm:py-4 bg-white text-black rounded-full font-clash font-semibold text-base sm:text-lg hover:bg-white/90 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation min-h-[48px]"
                 >
-                  {loading ? 'Processing...' : `Pay ₹${total / 100}`}
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="inline-block"
+                      >
+                        ⚡
+                      </motion.span>
+                      Processing...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      Pay ₹{total}
+                      <motion.span
+                        animate={{ x: [0, 5, 0] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                      >
+                        →
+                      </motion.span>
+                    </span>
+                  )}
                 </motion.button>
               </div>
             </div>

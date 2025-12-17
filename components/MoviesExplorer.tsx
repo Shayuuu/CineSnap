@@ -64,18 +64,33 @@ export default function MoviesExplorer({ nowPlaying, upcoming, popular }: Props)
         {/* Tabs + Filter */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-2 -mx-4 sm:mx-0 px-4 sm:px-0 scrollbar-hide">
-            {tabs.map((tab) => {
+            {tabs.map((tab, index) => {
               const active = activeTab === tab.id
               return (
-                <button
+                <motion.button
                   key={tab.id}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
                   onClick={() => setActiveTab(tab.id as 'now' | 'soon' | 'pop')}
-                  className={`px-3 sm:px-4 py-2 rounded-full border text-sm sm:text-base whitespace-nowrap touch-manipulation ${
-                    active ? 'bg-white text-black border-white' : 'border-white/20 text-white/80'
+                  className={`px-3 sm:px-4 py-2 rounded-full border text-sm sm:text-base whitespace-nowrap touch-manipulation relative overflow-hidden transition-all ${
+                    active 
+                      ? 'bg-gradient-to-r from-white to-gray-100 text-black border-white shadow-lg' 
+                      : 'border-white/20 text-white/80 hover:border-white/40 hover:bg-white/5'
                   }`}
                 >
-                  {tab.label}
-                </button>
+                  {active && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-gradient-to-r from-white to-gray-100 rounded-full"
+                      initial={false}
+                      transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                    />
+                  )}
+                  <span className="relative z-10 font-clash font-semibold">{tab.label}</span>
+                </motion.button>
               )
             })}
           </div>

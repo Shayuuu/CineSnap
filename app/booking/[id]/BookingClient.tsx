@@ -17,7 +17,6 @@ type Props = {
   screenName: string
   showtime: string
   pricePerSeat: number
-  isShowcaseMode?: boolean
 }
 
 export default function BookingClient({
@@ -30,7 +29,6 @@ export default function BookingClient({
   screenName,
   showtime,
   pricePerSeat,
-  isShowcaseMode = true, // Default to showcase mode
 }: Props) {
   const { data: session, status } = useSession()
   const router = useRouter()
@@ -39,16 +37,13 @@ export default function BookingClient({
 
   useEffect(() => {
     setMounted(true)
-    // Skip auth check in showcase mode
-    if (isShowcaseMode) return
-    
     if (status === 'loading') return
     if (!session) {
       router.push('/login?callbackUrl=/booking/' + showtimeId)
     }
-  }, [session, status, router, showtimeId, isShowcaseMode])
+  }, [session, status, router, showtimeId])
 
-  if (!isShowcaseMode && (status === 'loading' || !mounted)) {
+  if (status === 'loading' || !mounted) {
     return (
       <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6 flex items-center justify-center">
         <div className="glass rounded-xl sm:rounded-2xl p-6 sm:p-8">
@@ -59,12 +54,11 @@ export default function BookingClient({
     )
   }
 
-  if (!isShowcaseMode && !session) {
+  if (!session) {
     return null
   }
 
-  // Use demo user ID in showcase mode, or session user ID in production
-  const userId = isShowcaseMode ? 'demo-user' : ((session?.user as any)?.id || 'demo-user')
+  const userId = (session?.user as any)?.id
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 pb-24 sm:pb-32 px-3 sm:px-4 md:px-6">
@@ -77,14 +71,6 @@ export default function BookingClient({
           selectedCount={selectedSeats.length}
         />
 
-        <div className="mb-4 sm:mb-6 flex gap-3 sm:gap-4 justify-center">
-          <Link
-            href={`/booking/${showtimeId}/group`}
-            className="px-4 sm:px-6 py-2.5 sm:py-3 glass rounded-lg sm:rounded-xl border border-white/10 hover:border-white/30 transition-all text-white font-clash font-semibold text-sm sm:text-base touch-manipulation"
-          >
-            👥 Group Booking
-          </Link>
-        </div>
 
         {/* Seat Map - Centered */}
         <div className="flex justify-center">
