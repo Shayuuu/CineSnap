@@ -17,8 +17,6 @@ function getNextAuthSecret(): string {
 
 export const authOptions: NextAuthOptions = {
   secret: getNextAuthSecret(),
-  // Use NEXTAUTH_URL if set, otherwise default to localhost
-  url: process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
   pages: {
     signIn: '/login',
     error: '/login',
