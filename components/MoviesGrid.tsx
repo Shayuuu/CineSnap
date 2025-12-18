@@ -19,9 +19,11 @@ type Movie = {
 
 type Props = {
   movies: Movie[]
+  title?: string
+  subtitle?: string
 }
 
-export default function MoviesGrid({ movies }: Props) {
+export default function MoviesGrid({ movies, title = 'Now Showing', subtitle = 'Pick a movie to view showtimes and book seats' }: Props) {
   return (
     <div className="min-h-screen pt-20 sm:pt-24 pb-20 sm:pb-32 px-4 sm:px-6">
       <motion.div
@@ -31,10 +33,10 @@ export default function MoviesGrid({ movies }: Props) {
       >
         <div className="mb-8 sm:mb-12 text-center">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl font-clash font-bold mb-3 sm:mb-4">
-            <span className="text-white">Now Showing</span>
+            <span className="text-white">{title}</span>
           </h1>
           <p className="text-gray-400 text-sm sm:text-base md:text-lg px-4">
-            Pick a movie to view showtimes and book seats
+            {subtitle}
           </p>
         </div>
 

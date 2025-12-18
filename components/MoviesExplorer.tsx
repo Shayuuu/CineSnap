@@ -203,7 +203,17 @@ export default function MoviesExplorer({ nowPlaying, upcoming, popular }: Props)
           </div>
         </div>
 
-        <MoviesGrid movies={filtered} />
+        <MoviesGrid 
+          movies={filtered} 
+          title={activeTab === 'now' ? 'Now Showing' : activeTab === 'soon' ? 'Coming Soon' : 'Popular'}
+          subtitle={
+            activeTab === 'now' 
+              ? 'Pick a movie to view showtimes and book seats'
+              : activeTab === 'soon'
+              ? 'Upcoming releases - Book your tickets in advance'
+              : 'Trending movies - Most popular right now'
+          }
+        />
       </div>
 
       {/* Command Palette */}
