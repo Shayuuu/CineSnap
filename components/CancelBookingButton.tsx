@@ -22,11 +22,7 @@ export default function CancelBookingButton({ bookingId, startTime, onCancelled 
   const canCancel = hoursUntilShowtime >= 2
 
   const handleCancel = async () => {
-    if (!reason.trim()) {
-      setError('Please provide a reason for cancellation')
-      return
-    }
-
+    // Reason is optional, so we don't require it
     setLoading(true)
     setError(null)
 
@@ -35,13 +31,13 @@ export default function CancelBookingButton({ bookingId, startTime, onCancelled 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ reason }),
+        body: JSON.stringify({ reason: reason.trim() || 'No reason provided' }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to cancel booking')
+        throw new Error(data.error || data.details || 'Failed to cancel booking')
       }
 
       setIsOpen(false)
@@ -53,6 +49,7 @@ export default function CancelBookingButton({ bookingId, startTime, onCancelled 
       // Call the callback to refresh the bookings list
       onCancelled()
     } catch (err: any) {
+      console.error('Cancellation error:', err)
       setError(err.message || 'Failed to cancel booking')
     } finally {
       setLoading(false)
@@ -70,7 +67,11 @@ export default function CancelBookingButton({ bookingId, startTime, onCancelled 
   return (
     <>
       <motion.button
-        onClick={() => setIsOpen(true)}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setIsOpen(true)
+        }}
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm font-semibold transition-colors"
@@ -94,7 +95,7 @@ export default function CancelBookingButton({ bookingId, startTime, onCancelled 
             
             <div className="mb-4">
               <label className="block text-sm text-gray-300 mb-2">
-                Reason for cancellation (optional)
+                Reason for cancellation <span className="text-gray-500">(optional)</span>
               </label>
               <textarea
                 value={reason}

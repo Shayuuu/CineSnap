@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -8,6 +8,8 @@ import { formatDateShort, formatDateTime } from '@/lib/dateUtils'
 import ReviewSection from '@/components/ReviewSection'
 import WishlistButton from '@/components/WishlistButton'
 import TrailerModal from '@/components/TrailerModal'
+import { BookingIntent } from '@/hooks/useIntentParser'
+import { useSearchParams } from 'next/navigation'
 
 type Props = {
   movie: {
@@ -67,6 +69,46 @@ type Props = {
 export default function MovieDetailClient({ movie, showtimes = [], watchProviders, recommendations = [], trailerUrl }: Props) {
   const [trailerOpen, setTrailerOpen] = useState(false)
   const [selectedDateTab, setSelectedDateTab] = useState<string | null>(null)
+  const [bookingIntent, setBookingIntent] = useState<BookingIntent | null>(null)
+  const searchParams = useSearchParams()
+
+  // Load booking intent from URL params or sessionStorage
+  useEffect(() => {
+    // First check URL params (from MoviesExplorer navigation)
+    const seats = searchParams.get('seats')
+    const budget = searchParams.get('budget')
+    const center = searchParams.get('center')
+    const aisle = searchParams.get('aisle')
+    const vip = searchParams.get('vip')
+    const premium = searchParams.get('premium')
+
+    if (seats || budget || center || aisle || vip || premium) {
+      setBookingIntent({
+        movieQuery: movie.title,
+        date: null,
+        timeRange: null, // Will be extracted from URL or sessionStorage
+        seats: seats ? parseInt(seats, 10) : 1,
+        budget: budget ? parseInt(budget, 10) : null,
+        preferences: {
+          center: center === 'true',
+          aisle: aisle === 'true',
+          vip: vip === 'true',
+          premium: premium === 'true',
+        },
+      })
+    } else if (typeof window !== 'undefined') {
+      // Check sessionStorage
+      const storedIntent = sessionStorage.getItem('bookingIntent')
+      if (storedIntent) {
+        try {
+          const intent = JSON.parse(storedIntent) as BookingIntent
+          setBookingIntent(intent)
+        } catch (error) {
+          console.error('[MovieDetailClient] Failed to parse stored intent:', error)
+        }
+      }
+    }
+  }, [searchParams, movie.title])
   
   // Ensure movie exists
   if (!movie) {
@@ -85,9 +127,67 @@ export default function MovieDetailClient({ movie, showtimes = [], watchProvider
     threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3)
     return releaseDate < threeMonthsAgo
   })() : false
+
+  // Filter and score showtimes based on booking intent
+  const filteredAndScoredShowtimes = useMemo(() => {
+    if (!bookingIntent || showtimes.length === 0) {
+      return showtimes.map(show => ({ show, score: 0, isRecommended: false, reasons: '' }))
+    }
+
+    return showtimes.map(show => {
+      let score = 0
+      const reasons: string[] = []
+
+      // Check time range (evening = 6pm-9pm)
+      if (bookingIntent.timeRange === 'evening') {
+        const showTime = new Date(show.startTime)
+        const hour = showTime.getHours()
+        if (hour >= 18 && hour < 21) {
+          score += 30
+          reasons.push('evening show')
+        } else {
+          score -= 20 // Penalize non-evening shows
+        }
+      }
+
+      // Check budget (price per seat * number of seats <= budget)
+      if (bookingIntent.budget) {
+        const pricePerSeat = show.price / 100 // Convert from paise to rupees
+        const totalPrice = pricePerSeat * bookingIntent.seats
+        if (totalPrice <= bookingIntent.budget) {
+          score += 25
+          reasons.push(`within budget (₹${totalPrice})`)
+        } else {
+          score -= 30 // Penalize if over budget
+        }
+      }
+
+      // Check date preference
+      if (bookingIntent.date) {
+        const showDate = new Date(show.startTime).toDateString()
+        const preferredDate = new Date(bookingIntent.date).toDateString()
+        if (showDate === preferredDate) {
+          score += 20
+          reasons.push('preferred date')
+        }
+      }
+
+      return {
+        show,
+        score,
+        isRecommended: score > 20, // Recommended if score > 20
+        reasons: reasons.join(', '),
+      }
+    }).sort((a, b) => b.score - a.score) // Sort by score (highest first)
+  }, [showtimes, bookingIntent])
+
+  // Extract showtimes from scored results
+  const displayShowtimes = useMemo(() => {
+    return filteredAndScoredShowtimes.map(item => item.show)
+  }, [filteredAndScoredShowtimes])
   
   // Group showtimes by date first, then by theater, then by screen
-  const showtimesByDate = (showtimes || []).reduce((acc, show) => {
+  const showtimesByDate = (displayShowtimes || []).reduce((acc, show) => {
     if (!show || !show.startTime) return acc
     try {
       const date = new Date(show.startTime)
@@ -146,7 +246,7 @@ export default function MovieDetailClient({ movie, showtimes = [], watchProvider
   }).filter(([_, dateData]) => dateData && dateData.theaters && Object.keys(dateData.theaters).length > 0)
   
   // Group showtimes by theater (for fallback)
-  const showtimesByTheater = (showtimes || []).reduce((acc, show) => {
+  const showtimesByTheater = (displayShowtimes || []).reduce((acc, show) => {
     if (!show) return acc
     const theaterKey = show.theaterId || show.theaterName || 'unknown'
     if (!acc[theaterKey]) {
@@ -653,6 +753,11 @@ export default function MovieDetailClient({ movie, showtimes = [], watchProvider
                                       const showTime = new Date(show.startTime)
                                       const hours = showTime.getHours()
                                       
+                                      // Check if this showtime is recommended
+                                      const scoredShowtime = filteredAndScoredShowtimes.find(item => item.show.id === show.id)
+                                      const isRecommended = scoredShowtime?.isRecommended || false
+                                      const recommendationReasons = scoredShowtime?.reasons || ''
+                                      
                                       // Get gradient colors based on time
                                       const getGradientStyle = () => {
                                         if (hours >= 6 && hours < 12) {
@@ -692,8 +797,35 @@ export default function MovieDetailClient({ movie, showtimes = [], watchProvider
                                       
                                       const gradientStyle = getGradientStyle()
                                       
+                                      // Build booking URL with intent params
+                                      const bookingUrl = (() => {
+                                        const baseUrl = `/booking/${show.id}`
+                                        if (!bookingIntent) return baseUrl
+                                        
+                                        const params = new URLSearchParams()
+                                        if (bookingIntent.seats) params.set('seats', bookingIntent.seats.toString())
+                                        if (bookingIntent.budget) params.set('budget', bookingIntent.budget.toString())
+                                        if (bookingIntent.preferences.center) params.set('center', 'true')
+                                        if (bookingIntent.preferences.aisle) params.set('aisle', 'true')
+                                        if (bookingIntent.preferences.vip) params.set('vip', 'true')
+                                        if (bookingIntent.preferences.premium) params.set('premium', 'true')
+                                        if (bookingIntent.timeRange) params.set('timeRange', bookingIntent.timeRange)
+                                        
+                                        return params.toString() ? `${baseUrl}?${params.toString()}` : baseUrl
+                                      })()
+
                                       return (
-                                        <Link key={show.id} href={`/booking/${show.id}`} className="touch-manipulation">
+                                        <Link 
+                                          key={show.id} 
+                                          href={bookingUrl}
+                                          onClick={() => {
+                                            // Store intent in sessionStorage for booking page
+                                            if (bookingIntent && typeof window !== 'undefined') {
+                                              sessionStorage.setItem('bookingIntent', JSON.stringify(bookingIntent))
+                                            }
+                                          }}
+                                          className="touch-manipulation"
+                                        >
                                           <motion.button
                                             initial={{ opacity: 0, scale: 0.8 }}
                                             animate={{ opacity: 1, scale: 1 }}
@@ -705,31 +837,44 @@ export default function MovieDetailClient({ movie, showtimes = [], watchProvider
                                             <div className={`
                                               px-3 sm:px-4 py-2.5 sm:py-3 
                                               rounded-xl border-2
-                                              ${gradientStyle.bg}
-                                              ${gradientStyle.border}
+                                              ${isRecommended 
+                                                ? 'bg-gradient-to-br from-cyan-400/20 to-magenta-400/20 border-cyan-400/50 shadow-xl shadow-cyan-400/30' 
+                                                : `${gradientStyle.bg} ${gradientStyle.border}`
+                                              }
                                               ${gradientStyle.bgHover}
                                               transition-all duration-300
                                               relative overflow-hidden
-                                              shadow-lg hover:shadow-xl hover:shadow-purple-500/20
+                                              ${isRecommended ? 'hover:shadow-2xl hover:shadow-cyan-400/40' : 'shadow-lg hover:shadow-xl hover:shadow-purple-500/20'}
                                               w-full h-full
+                                              ${isRecommended ? 'ring-2 ring-cyan-400/50 animate-pulse' : ''}
                                             `}>
                                               <div className={`absolute inset-0 ${gradientStyle.accent} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}></div>
                                               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                                               
                                               <div className="relative z-10 text-center flex flex-col items-center justify-center h-full">
+                                                {isRecommended && (
+                                                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-cyan-400 to-magenta-400 rounded-full flex items-center justify-center text-[8px] text-white font-bold animate-pulse">
+                                                    ⭐
+                                                  </div>
+                                                )}
                                                 <motion.div 
                                                   className="text-base sm:text-lg mb-1 opacity-70 group-hover:opacity-100 transition-opacity"
                                                   animate={{ scale: [1, 1.1, 1] }}
                                                   transition={{ duration: 2, repeat: Infinity }}
                                                 >
-                                                  {gradientStyle.icon}
+                                                  {isRecommended ? '✨' : gradientStyle.icon}
                                                 </motion.div>
-                                                <p className="text-sm sm:text-base font-clash font-bold text-white group-hover:text-yellow-300 transition-colors mb-0.5">
+                                                <p className={`text-sm sm:text-base font-clash font-bold ${isRecommended ? 'text-cyan-300' : 'text-white'} group-hover:text-yellow-300 transition-colors mb-0.5`}>
                                                   {formatTime(show.startTime)}
                                                 </p>
                                                 <span className="text-[10px] sm:text-xs text-gray-400 group-hover:text-white/90 transition-colors font-medium">
                                                   ₹{show.price ? (show.price / 100) : 0}
                                                 </span>
+                                                {isRecommended && recommendationReasons && (
+                                                  <span className="text-[8px] text-cyan-300/80 mt-0.5 line-clamp-1" title={recommendationReasons}>
+                                                    {recommendationReasons}
+                                                  </span>
+                                                )}
                                               </div>
                                               
                                               <div className={`absolute top-0 right-0 w-1.5 h-1.5 ${gradientStyle.accent} rounded-bl-xl opacity-0 group-hover:opacity-100 transition-opacity`}></div>

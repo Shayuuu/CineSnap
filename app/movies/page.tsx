@@ -42,15 +42,25 @@ const STREAMING_PROVIDER_IDS = [8, 9, 2, 337, 350] // Netflix, Prime Video, Appl
 // Check if a movie is streaming-only (has only streaming platforms, no cinema showtimes)
 async function isStreamingOnly(movieId: string, apiKey: string): Promise<boolean> {
   try {
+    // Add timeout and abort controller for fetch
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout
+    
     const providersRes = await fetch(
       `https://api.themoviedb.org/3/movie/${movieId}/watch/providers?api_key=${apiKey}`,
       { 
         next: { revalidate: 3600 },
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Accept': 'application/json' },
+        signal: controller.signal
       }
     )
     
-    if (!providersRes.ok) return false
+    clearTimeout(timeoutId)
+    
+    if (!providersRes.ok) {
+      console.warn(`[MoviesPage] TMDb API error for watch providers (${movieId}): ${providersRes.status}`)
+      return false // Default to showing in cinemas if API fails
+    }
     
     const providersData = await providersRes.json()
     const providers = providersData.results?.IN || providersData.results?.US || null
@@ -76,8 +86,13 @@ async function isStreamingOnly(movieId: string, apiKey: string): Promise<boolean
     }
     
     return false
-  } catch (error) {
-    console.error(`[MoviesPage] Error checking streaming status for ${movieId}:`, error)
+  } catch (error: any) {
+    // Handle abort errors and network errors gracefully
+    if (error.name === 'AbortError') {
+      console.warn(`[MoviesPage] Timeout checking streaming status for ${movieId}`)
+    } else {
+      console.error(`[MoviesPage] Error checking streaming status for ${movieId}:`, error?.message || error)
+    }
     return false // Default to showing in cinemas if check fails
   }
 }
@@ -189,11 +204,20 @@ export default async function MoviesPage() {
       genres: m.genre_ids || [],
     }))
     
-    // Check which movies are streaming-only (check first 30 to ensure we have enough after filtering)
-    const moviesToCheck = nowMapped.slice(0, 30)
-    const streamingChecks = await Promise.allSettled(
-      moviesToCheck.map(m => isStreamingOnly(m.id, apiKey))
-    )
+    // Check which movies are streaming-only (check first 15 to reduce API calls and avoid timeouts)
+    // This is a non-critical check - if it fails, we'll just show all movies
+    const moviesToCheck = nowMapped.slice(0, 15)
+    let streamingChecks: PromiseSettledResult<boolean>[] = []
+    
+    try {
+      streamingChecks = await Promise.allSettled(
+        moviesToCheck.map(m => isStreamingOnly(m.id, apiKey))
+      )
+    } catch (error) {
+      console.warn('[MoviesPage] Streaming check failed, showing all movies:', error)
+      // If streaming check fails entirely, just show all movies
+      streamingChecks = []
+    }
     
     const now = nowMapped
       .filter((m: any, index: number) => {

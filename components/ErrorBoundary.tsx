@@ -18,12 +18,44 @@ class ErrorBoundaryClass extends React.Component<Props, State> {
     this.state = { hasError: false }
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error }
+  static getDerivedStateFromError(error: any): State {
+    // Handle cases where non-Error objects are thrown (e.g., Event objects)
+    if (error instanceof Error) {
+      return { hasError: true, error }
+    } else {
+      // Convert non-Error values to Error objects
+      const errorMessage = typeof error === 'string' 
+        ? error 
+        : error?.message 
+        ? error.message 
+        : error?.toString 
+        ? error.toString() 
+        : 'An unexpected error occurred'
+      
+      return { 
+        hasError: true, 
+        error: new Error(errorMessage) 
+      }
+    }
   }
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+  componentDidCatch(error: any, errorInfo: React.ErrorInfo) {
+    // Safely log the error
+    if (error instanceof Error) {
+      console.error('ErrorBoundary caught an error:', error, errorInfo)
+    } else {
+      console.error('ErrorBoundary caught a non-Error value:', error, errorInfo)
+      // Try to extract useful information
+      if (error && typeof error === 'object') {
+        try {
+          console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)))
+        } catch (e) {
+          console.error('Error value:', String(error))
+        }
+      } else {
+        console.error('Error value:', String(error))
+      }
+    }
   }
 
   render() {

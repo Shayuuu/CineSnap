@@ -137,11 +137,12 @@ export default function MyBookingsPage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Link href={`/ticket/${booking.id}`} className="touch-manipulation">
-                <motion.div
-                  whileHover={{ scale: 1.02, y: -5 }}
-                  className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-white/30 transition-all cursor-pointer h-full"
-                >
+              <div className="glass-strong rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-white/30 transition-all h-full">
+                <Link href={`/ticket/${booking.id}`} className="touch-manipulation block">
+                  <motion.div
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    className="cursor-pointer"
+                  >
                   <div className="flex gap-3 sm:gap-4 mb-3 sm:mb-4">
                     {booking.posterUrl && (
                       <div className="w-20 h-28 sm:w-24 sm:h-32 md:w-32 md:h-48 rounded-lg overflow-hidden relative flex-shrink-0">
@@ -180,12 +181,15 @@ export default function MyBookingsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 pt-3 sm:pt-4 border-t border-white/10">
-                    <span className="text-[10px] sm:text-xs text-gray-400">
-                      Booking ID: {booking.id.slice(0, 8)}
-                    </span>
-                    <div className="flex items-center gap-3">
-                      {booking.status === 'CONFIRMED' && (
+                  </motion.div>
+                </Link>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 pt-3 sm:pt-4 border-t border-white/10 mt-3 sm:mt-4">
+                  <span className="text-[10px] sm:text-xs text-gray-400">
+                    Booking ID: {booking.id.slice(0, 8)}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    {booking.status === 'CONFIRMED' && (
+                      <div onClick={(e) => e.stopPropagation()}>
                         <CancelBookingButton
                           bookingId={booking.id}
                           startTime={booking.startTime}
@@ -194,20 +198,20 @@ export default function MyBookingsPage() {
                             fetchBookings()
                           }}
                         />
-                      )}
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        booking.status === 'CONFIRMED' 
-                          ? 'bg-green-500/20 text-green-400'
-                          : booking.status === 'CANCELLED'
-                          ? 'bg-red-500/20 text-red-400'
-                          : 'bg-yellow-500/20 text-yellow-400'
-                      }`}>
-                        {booking.status}
-                      </span>
-                    </div>
+                      </div>
+                    )}
+                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                      booking.status === 'CONFIRMED' 
+                        ? 'bg-green-500/20 text-green-400'
+                        : booking.status === 'CANCELLED'
+                        ? 'bg-red-500/20 text-red-400'
+                        : 'bg-yellow-500/20 text-yellow-400'
+                    }`}>
+                      {booking.status}
+                    </span>
                   </div>
-                </motion.div>
-              </Link>
+                </div>
+              </div>
             </motion.div>
           ))}
         </div>

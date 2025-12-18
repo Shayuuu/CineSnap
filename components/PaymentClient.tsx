@@ -47,6 +47,7 @@ export default function PaymentClient({
   const [paymentMethod, setPaymentMethod] = useState<'razorpay' | 'stripe'>('stripe')
   const [foodTotal, setFoodTotal] = useState(0)
   const [bookingId, setBookingId] = useState<string | null>(null)
+  const [seatDetails, setSeatDetails] = useState<Array<{ id: string; row: string; number: number }>>([])
 
   // Calculate total based on actual seat prices if provided, otherwise use pricePerSeat
   const seatPrices = seatPricesParam 
@@ -54,6 +55,37 @@ export default function PaymentClient({
     : seatIds.map(() => pricePerSeat)
   const seatsTotal = seatPrices.reduce((sum, price) => sum + price, 0)
   const total = seatsTotal + foodTotal
+
+  // Fetch seat details (row and number) from API
+  useEffect(() => {
+    if (seatIds.length === 0) return
+
+    const fetchSeatDetails = async () => {
+      try {
+        const res = await fetch(`/api/seats/details?seatIds=${seatIds.join(',')}`)
+        if (res.ok) {
+          const data = await res.json()
+          setSeatDetails(data.seats || [])
+        } else {
+          console.warn('Failed to fetch seat details, using IDs as fallback')
+        }
+      } catch (err) {
+        console.warn('Error fetching seat details:', err)
+      }
+    }
+
+    fetchSeatDetails()
+  }, [seatIds])
+
+  // Helper to get seat display name (e.g., "A1", "B2")
+  const getSeatDisplayName = (seatId: string): string => {
+    const seat = seatDetails.find(s => s.id === seatId)
+    if (seat) {
+      return `${seat.row}${seat.number}`
+    }
+    // Fallback: try to extract from ID if it has a pattern (shouldn't happen with UUIDs)
+    return seatId.slice(0, 8) // Show first 8 chars as fallback
+  }
 
   const cardBg = useMemo(
     () => ({
@@ -250,19 +282,14 @@ export default function PaymentClient({
                   Selected Seats
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {seatIds.map((seatId) => {
-                    const parts = seatId.split('-')
-                    const row = parts[parts.length - 2]
-                    const num = parts[parts.length - 1]
-                    return (
-                      <span
-                        key={seatId}
-                        className="px-3 sm:px-4 py-1.5 sm:py-2 glass rounded-lg text-white font-semibold text-sm sm:text-base"
-                      >
-                        {row}{num}
-                      </span>
-                    )
-                  })}
+                  {seatIds.map((seatId) => (
+                    <span
+                      key={seatId}
+                      className="px-3 sm:px-4 py-1.5 sm:py-2 glass rounded-lg text-white font-semibold text-sm sm:text-base"
+                    >
+                      {getSeatDisplayName(seatId)}
+                    </span>
+                  ))}
                 </div>
               </div>
 
@@ -270,12 +297,9 @@ export default function PaymentClient({
                 <div className="space-y-2 mb-3 sm:mb-4">
                   {seatIds.map((seatId, index) => {
                     const seatPrice = seatPrices[index] || pricePerSeat
-                    const parts = seatId.split('-')
-                    const row = parts[parts.length - 2]
-                    const num = parts[parts.length - 1]
                     return (
                       <div key={seatId} className="flex justify-between items-center text-sm sm:text-base">
-                        <span className="text-gray-300">Seat {row}{num}</span>
+                        <span className="text-gray-300">Seat {getSeatDisplayName(seatId)}</span>
                         <span className="text-white font-semibold">₹{seatPrice}</span>
                       </div>
                     )
@@ -352,7 +376,7 @@ export default function PaymentClient({
                       {movieTitle} • {formatDateTime(showtime)}
                     </p>
                     <p className="text-white/60 text-xs sm:text-sm mt-1 sm:mt-2 line-clamp-1">
-                      Seats: {seatIds.map((s) => s.split('-').slice(-2).join('')).join(', ')}
+                      Seats: {seatIds.map((s) => getSeatDisplayName(s)).join(', ')}
                     </p>
                   </div>
                   <div className="flex items-center justify-between text-white/60 text-[10px] sm:text-xs">

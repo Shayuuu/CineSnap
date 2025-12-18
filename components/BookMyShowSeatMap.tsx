@@ -19,6 +19,7 @@ type Props = {
   showtimeId?: string
   userId?: string
   pricePerSeat?: number
+  highlightedSeats?: string[] // AI-recommended seats to highlight
 }
 
 // Price mapping based on seat type
@@ -63,6 +64,7 @@ export default function BookMyShowSeatMap({
   showtimeId,
   userId,
   pricePerSeat = 500,
+  highlightedSeats = [],
 }: Props) {
   const [selected, setSelected] = useState<string[]>([])
   const [loading, setLoading] = useState<string | null>(null)
@@ -236,7 +238,7 @@ export default function BookMyShowSeatMap({
     })
   }
 
-  const getSeatStatus = (seat: Seat, isLocked: boolean, isBooked: boolean, isSelected: boolean) => {
+  const getSeatStatus = (seat: Seat, isLocked: boolean, isBooked: boolean, isSelected: boolean, isHighlighted: boolean) => {
     if (isBooked) {
       return {
         bg: 'bg-gray-600',
@@ -259,6 +261,14 @@ export default function BookMyShowSeatMap({
         border: 'border-red-500',
         text: 'text-white',
         label: 'Locked'
+      }
+    }
+    if (isHighlighted) {
+      return {
+        bg: 'bg-cyan-500/20',
+        border: 'border-cyan-400',
+        text: 'text-white font-semibold',
+        label: 'Recommended'
       }
     }
     return {
@@ -352,7 +362,8 @@ export default function BookMyShowSeatMap({
                           const isBooked = bookedSeats.includes(seat.id)
                           const isLocked = currentLockedSeats.includes(seat.id) && !selected.includes(seat.id) && !isBooked
                           const isSelected = selected.includes(seat.id)
-                          const status = getSeatStatus(seat, isLocked, isBooked, isSelected)
+                          const isHighlighted = highlightedSeats.includes(seat.id) && !isBooked && !isLocked && !isSelected
+                          const status = getSeatStatus(seat, isLocked, isBooked, isSelected, isHighlighted)
                           
                           // Determine seat type for 3D design
                           const seatType = seat.type || 'STANDARD'
@@ -385,28 +396,34 @@ export default function BookMyShowSeatMap({
                                   ${!isBooked && !isLocked ? 'cursor-pointer' : 'cursor-not-allowed'}
                                   disabled:opacity-50
                                   ${isSelected ? 'shadow-2xl shadow-green-500/60 ring-2 ring-green-400 ring-offset-2 ring-offset-gray-900' : ''}
+                                  ${isHighlighted ? 'shadow-xl shadow-cyan-400/40 ring-2 ring-cyan-400 ring-offset-2 ring-offset-gray-900 animate-pulse' : ''}
                                   ${isVip ? 'w-11 h-10 sm:w-14 sm:h-12 md:w-16 md:h-14 min-w-[44px] min-h-[44px]' : isPremium ? 'w-10 h-9 sm:w-11 sm:h-10 md:w-13 md:h-11 min-w-[40px] min-h-[36px]' : 'w-9 h-8 sm:w-10 sm:h-9 md:w-12 md:h-10 min-w-[36px] min-h-[32px]'}
                                   transform-gpu
                                 `}
-                                title={`${seat.row}${seat.number} - ${isBooked ? 'Sold' : isLocked ? 'Locked' : isSelected ? 'Selected' : 'Available'} - ₹${getSeatPrice(seat.type, pricePerSeat)}`}
-                                aria-label={`Seat ${seat.row}${seat.number}${isBooked ? ' - Sold' : isLocked ? ' - Locked' : isSelected ? ' - Selected' : ' - Available'} - ₹${getSeatPrice(seat.type, pricePerSeat)}`}
+                                title={`${seat.row}${seat.number} - ${isBooked ? 'Sold' : isLocked ? 'Locked' : isSelected ? 'Selected' : isHighlighted ? 'Recommended' : 'Available'} - ₹${getSeatPrice(seat.type, pricePerSeat)}`}
+                                aria-label={`Seat ${seat.row}${seat.number}${isBooked ? ' - Sold' : isLocked ? ' - Locked' : isSelected ? ' - Selected' : isHighlighted ? ' - Recommended' : ' - Available'} - ₹${getSeatPrice(seat.type, pricePerSeat)}`}
                               >
                               {/* Enhanced 3D Seat Design with Glow */}
                               <div className={`
                                 relative w-full h-full rounded-lg
                                 ${isBooked ? 'opacity-50' : ''}
                                 ${isSelected ? 'animate-pulse-glow' : ''}
+                                ${isHighlighted ? 'animate-pulse-glow' : ''}
                                 transition-all duration-300
                               `}>
                                 {/* Glow effect for selected seats */}
                                 {isSelected && (
                                   <div className="absolute inset-0 rounded-lg bg-green-500/30 blur-md -z-10 animate-pulse"></div>
                                 )}
+                                {/* Glow effect for highlighted (AI-recommended) seats */}
+                                {isHighlighted && (
+                                  <div className="absolute inset-0 rounded-lg bg-cyan-400/30 blur-md -z-10 animate-pulse"></div>
+                                )}
                                 {isVip ? (
                                   // Enhanced VIP Sofa Seat (Black with Gold accents)
                                   <div className={`
                                     w-full h-full rounded-lg
-                                    ${isBooked ? 'bg-gray-600' : isSelected ? 'bg-gradient-to-br from-green-500 to-green-600' : isLocked ? 'bg-red-500/30 border-2 border-red-500' : 'bg-gradient-to-br from-gray-900 to-black border-2 border-gray-700'}
+                                    ${isBooked ? 'bg-gray-600' : isSelected ? 'bg-gradient-to-br from-green-500 to-green-600' : isHighlighted ? 'bg-gradient-to-br from-cyan-500/80 to-cyan-600/80 border-2 border-cyan-400' : isLocked ? 'bg-red-500/30 border-2 border-red-500' : 'bg-gradient-to-br from-gray-900 to-black border-2 border-gray-700'}
                                     transform perspective-1000
                                     shadow-xl
                                     relative overflow-hidden
@@ -414,6 +431,8 @@ export default function BookMyShowSeatMap({
                                     transform: 'perspective(500px) rotateX(5deg)',
                                     boxShadow: isBooked ? 'none' : isSelected 
                                       ? '0 6px 20px rgba(34, 197, 94, 0.6), inset 0 2px 4px rgba(0,0,0,0.3), 0 0 15px rgba(34, 197, 94, 0.4)' 
+                                      : isHighlighted
+                                      ? '0 6px 20px rgba(34, 211, 238, 0.5), inset 0 2px 4px rgba(0,0,0,0.3), 0 0 15px rgba(34, 211, 238, 0.3)'
                                       : isLocked
                                       ? '0 4px 12px rgba(239, 68, 68, 0.4), inset 0 2px 4px rgba(0,0,0,0.3)'
                                       : '0 4px 12px rgba(0,0,0,0.5), inset 0 2px 4px rgba(0,0,0,0.3)'
@@ -441,7 +460,7 @@ export default function BookMyShowSeatMap({
                                       // Enhanced Premium Comfy Seat (Red with gradient)
                                       <div className={`
                                         w-full h-full rounded-md
-                                        ${isBooked ? 'bg-gray-600' : isSelected ? 'bg-gradient-to-br from-green-500 to-green-600' : isLocked ? 'bg-red-500/30 border-2 border-red-500' : 'bg-gradient-to-br from-red-600 to-red-800 border-2 border-red-700'}
+                                        ${isBooked ? 'bg-gray-600' : isSelected ? 'bg-gradient-to-br from-green-500 to-green-600' : isHighlighted ? 'bg-gradient-to-br from-cyan-500/80 to-cyan-600/80 border-2 border-cyan-400' : isLocked ? 'bg-red-500/30 border-2 border-red-500' : 'bg-gradient-to-br from-red-600 to-red-800 border-2 border-red-700'}
                                         transform perspective-1000
                                         shadow-lg
                                         relative overflow-hidden
@@ -449,6 +468,8 @@ export default function BookMyShowSeatMap({
                                         transform: 'perspective(400px) rotateX(8deg) translateY(-1px)',
                                         boxShadow: isBooked ? 'none' : isSelected 
                                           ? '0 5px 15px rgba(34, 197, 94, 0.6), inset 0 1px 3px rgba(0,0,0,0.2), 0 0 12px rgba(34, 197, 94, 0.4)' 
+                                          : isHighlighted
+                                          ? '0 5px 15px rgba(34, 211, 238, 0.5), inset 0 1px 3px rgba(0,0,0,0.2), 0 0 12px rgba(34, 211, 238, 0.3)'
                                           : isLocked
                                           ? '0 3px 10px rgba(239, 68, 68, 0.4), inset 0 1px 3px rgba(0,0,0,0.2)'
                                           : '0 3px 10px rgba(220, 38, 38, 0.5), inset 0 1px 3px rgba(0,0,0,0.2)'
@@ -468,7 +489,7 @@ export default function BookMyShowSeatMap({
                                       // Enhanced Normal Seat (Blue with gradient)
                                       <div className={`
                                         w-full h-full rounded
-                                        ${isBooked ? 'bg-gray-600' : isSelected ? 'bg-gradient-to-br from-green-500 to-green-600' : isLocked ? 'bg-red-500/30 border-2 border-red-500' : 'bg-gradient-to-br from-blue-600 to-blue-800 border-2 border-blue-700'}
+                                        ${isBooked ? 'bg-gray-600' : isSelected ? 'bg-gradient-to-br from-green-500 to-green-600' : isHighlighted ? 'bg-gradient-to-br from-cyan-500/80 to-cyan-600/80 border-2 border-cyan-400' : isLocked ? 'bg-red-500/30 border-2 border-red-500' : 'bg-gradient-to-br from-blue-600 to-blue-800 border-2 border-blue-700'}
                                         transform perspective-1000
                                         shadow-md
                                         relative overflow-hidden
@@ -476,6 +497,8 @@ export default function BookMyShowSeatMap({
                                         transform: 'perspective(300px) rotateX(10deg)',
                                         boxShadow: isBooked ? 'none' : isSelected 
                                           ? '0 4px 12px rgba(34, 197, 94, 0.6), inset 0 1px 2px rgba(0,0,0,0.2), 0 0 10px rgba(34, 197, 94, 0.4)' 
+                                          : isHighlighted
+                                          ? '0 4px 12px rgba(34, 211, 238, 0.5), inset 0 1px 2px rgba(0,0,0,0.2), 0 0 10px rgba(34, 211, 238, 0.3)'
                                           : isLocked
                                           ? '0 2px 8px rgba(239, 68, 68, 0.4), inset 0 1px 2px rgba(0,0,0,0.2)'
                                           : '0 2px 8px rgba(37, 99, 235, 0.4), inset 0 1px 2px rgba(0,0,0,0.2)'

@@ -29,11 +29,12 @@ export async function POST(
     }
 
     // Get booking details (PostgreSQL syntax)
-    const booking = await queryOne<any>(
-      `SELECT b.*, s."startTime", m.title as "movieTitle" 
+    // Try to get movie title from Movie table, fallback to fetching from TMDb if needed
+    let booking = await queryOne<any>(
+      `SELECT b.*, s."startTime", s."movieId", m.title as "movieTitle" 
        FROM "Booking" b
        INNER JOIN "Showtime" s ON b."showtimeId" = s.id
-       INNER JOIN "Movie" m ON s."movieId" = m.id
+       LEFT JOIN "Movie" m ON s."movieId" = m.id
        WHERE b.id = $1 AND b."userId" = $2`,
       [bookingId, user.id]
     )
@@ -42,14 +43,35 @@ export async function POST(
       return Response.json({ error: 'Booking not found' }, { status: 404 })
     }
 
+    // If movie title not in database, fetch from TMDb API
+    if (!booking.movieTitle && booking.movieId) {
+      try {
+        const { getTmdbApiKey } = await import('@/lib/config')
+        const apiKey = getTmdbApiKey()
+        if (apiKey) {
+          const movieRes = await fetch(
+            `https://api.themoviedb.org/3/movie/${booking.movieId}?api_key=${apiKey}&language=en-IN`,
+            { next: { revalidate: 3600 } }
+          )
+          if (movieRes.ok) {
+            const movieData = await movieRes.json()
+            booking.movieTitle = movieData.title || 'Movie'
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch movie title from TMDb:', err)
+        booking.movieTitle = booking.movieTitle || 'Movie'
+      }
+    }
+
     // Check if booking is already cancelled
     if (booking.status === 'CANCELLED') {
       return Response.json({ error: 'Booking already cancelled' }, { status: 400 })
     }
 
-    // Check if booking is confirmed
-    if (booking.status !== 'CONFIRMED') {
-      return Response.json({ error: 'Only confirmed bookings can be cancelled' }, { status: 400 })
+    // Allow cancellation of both PENDING and CONFIRMED bookings
+    if (booking.status !== 'CONFIRMED' && booking.status !== 'PENDING') {
+      return Response.json({ error: 'Only confirmed or pending bookings can be cancelled' }, { status: 400 })
     }
 
     // Check if showtime has passed (allow cancellation up to 2 hours before showtime)
@@ -70,19 +92,66 @@ export async function POST(
     }
 
     const connection = await getConnection()
-    await connection.query('BEGIN')
-
+    
     try {
+      await connection.query('BEGIN')
+
       // Update booking status (PostgreSQL syntax)
+      // Try with updatedAt first (it exists in schema)
+      try {
+        await connection.query(
+          `UPDATE "Booking" 
+           SET status = 'CANCELLED', "updatedAt" = NOW()
+           WHERE id = $1`,
+          [bookingId]
+        )
+      } catch (err: any) {
+        // Fallback if updatedAt column doesn't exist
+        if (err.message?.includes('updatedAt') || err.message?.includes('updated_at') || err.message?.includes('column')) {
+          await connection.query(
+            `UPDATE "Booking" 
+             SET status = 'CANCELLED'
+             WHERE id = $1`,
+            [bookingId]
+          )
+        } else {
+          throw err
+        }
+      }
+
+      // Get seat IDs before deleting (for Redis unlock)
+      const seatIdsResult = await connection.query(
+        `SELECT "B" as "seatId" FROM "_BookingSeats" WHERE "A" = $1`,
+        [bookingId]
+      )
+      // Handle both result.rows (pg library) and direct array
+      const seatIds = Array.isArray(seatIdsResult) 
+        ? seatIdsResult.map((row: any) => row.seatId || row.B)
+        : (seatIdsResult.rows || []).map((row: any) => row.seatId || row.B)
+
+      // Release seats by removing them from the booking seats junction table
       await connection.query(
-        `UPDATE "Booking" 
-         SET status = 'CANCELLED', 
-             "updatedAt" = NOW()
-         WHERE id = $1`,
+        `DELETE FROM "_BookingSeats" WHERE "A" = $1`,
         [bookingId]
       )
 
       await connection.query('COMMIT')
+
+      // Release Redis locks for these seats (async, don't wait)
+      if (seatIds.length > 0) {
+        try {
+          const { redis } = await import('@/lib/redis')
+          const key = `lock:${booking.showtimeId}`
+          const pipeline = redis.pipeline()
+          seatIds.forEach((seatId: string) => pipeline.hdel(key, seatId))
+          await pipeline.exec().catch(() => {
+            // Silently fail if Redis is unavailable
+          })
+        } catch (err) {
+          // Silently fail if Redis is unavailable
+          console.warn('Failed to release Redis locks:', err)
+        }
+      }
 
       // Get user email
       const userEmail = session.user.email
@@ -114,8 +183,17 @@ export async function POST(
 
   } catch (error: any) {
     console.error('Cancellation error:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      bookingId,
+      userId: session?.user?.email,
+    })
     return Response.json(
-      { error: error.message || 'Failed to cancel booking' },
+      { 
+        error: error.message || 'Failed to cancel booking',
+        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     )
   }

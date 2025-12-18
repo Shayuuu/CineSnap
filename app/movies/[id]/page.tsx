@@ -23,34 +23,57 @@ export default async function MovieDetailPage({ params }: Props) {
   let watchProviders: any = null
   if (apiKey) {
     try {
-      // Fetch movie details, videos, and watch providers in parallel
+      // Fetch movie details, videos, and watch providers in parallel with timeout protection
+      const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number = 10000) => {
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+        
+        try {
+          const response = await fetch(url, {
+            ...options,
+            signal: controller.signal,
+          })
+          clearTimeout(timeoutId)
+          return response
+        } catch (error: any) {
+          clearTimeout(timeoutId)
+          if (error.name === 'AbortError') {
+            throw new Error(`Request timeout after ${timeoutMs}ms`)
+          }
+          throw error
+        }
+      }
+
       const [movieRes, videosRes, providersRes] = await Promise.allSettled([
-        fetch(
+        fetchWithTimeout(
           `https://api.themoviedb.org/3/movie/${id}?api_key=${apiKey}&language=en-IN&append_to_response=credits`,
           { 
             next: { revalidate: 3600 }, // Cache for 1 hour (ISR)
             headers: {
               'Accept': 'application/json',
             }
-          }
+          },
+          10000 // 10 second timeout
         ),
-        fetch(
+        fetchWithTimeout(
           `https://api.themoviedb.org/3/movie/${id}/videos?api_key=${apiKey}`,
           { 
             next: { revalidate: 3600 }, // Cache for 1 hour
             headers: {
               'Accept': 'application/json',
             }
-          }
+          },
+          8000 // 8 second timeout for videos (less critical)
         ),
-        fetch(
+        fetchWithTimeout(
           `https://api.themoviedb.org/3/movie/${id}/watch/providers?api_key=${apiKey}`,
           { 
             next: { revalidate: 3600 }, // Cache for 1 hour
             headers: {
               'Accept': 'application/json',
             }
-          }
+          },
+          8000 // 8 second timeout for providers (less critical)
         )
       ])
 
@@ -113,9 +136,18 @@ export default async function MovieDetailPage({ params }: Props) {
       } else if (movieRes.status === 'rejected') {
         // Network error or fetch failed
         const errorMsg = movieRes.reason?.message || 'Unknown error'
+        const isTimeout = errorMsg.includes('timeout') || errorMsg.includes('AbortError')
+        const isNetworkError = errorMsg.includes('fetch failed') || errorMsg.includes('NetworkError')
+        
+        // Only log in development, and use warn instead of error for network issues
         if (process.env.NODE_ENV === 'development') {
-          console.error('[TMDb] Failed to fetch movie:', errorMsg)
-          console.error('[TMDb] Error details:', movieRes.reason)
+          if (isTimeout) {
+            console.warn(`[TMDb] Request timeout for movie ${id}. This may be due to slow network or API issues.`)
+          } else if (isNetworkError) {
+            console.warn(`[TMDb] Network error fetching movie ${id}. Check your internet connection or TMDb API status.`)
+          } else {
+            console.warn(`[TMDb] Failed to fetch movie ${id}:`, errorMsg)
+          }
         }
         // Don't throw - let the page continue with notFound() below
       } else if (movieRes.status === 'fulfilled' && !movieRes.value.ok) {
